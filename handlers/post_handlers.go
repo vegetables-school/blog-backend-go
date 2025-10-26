@@ -23,7 +23,11 @@ func NewPostHandler(postService *services.PostService) *PostHandler {
 
 // GetPosts 获取所有博客文章
 func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	posts := h.postService.GetAllPosts()
+	posts, err := h.postService.GetAllPosts()
+	if err != nil {
+		http.Error(w, "获取文章失败", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
@@ -32,14 +36,10 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 // GetPost 获取单篇博客文章
 func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "无效的 ID", http.StatusBadRequest)
-		return
-	}
+	id := vars["id"]
 
-	post, exists := h.postService.GetPostByID(id)
-	if !exists {
+	post, err := h.postService.GetPostByID(id)
+	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}
@@ -60,7 +60,11 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := h.postService.CreatePost(req.Title, req.Content, req.Author)
+	post, err := h.postService.CreatePost(req.Title, req.Content, req.Author)
+	if err != nil {
+		http.Error(w, "创建文章失败", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -70,11 +74,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 // UpdatePost 更新博客文章
 func (h *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "无效的 ID", http.StatusBadRequest)
-		return
-	}
+	id := vars["id"]
 
 	var req struct {
 		Title   string `json:"title"`
@@ -86,8 +86,8 @@ func (h *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, exists := h.postService.UpdatePost(id, req.Title, req.Content, req.Author)
-	if !exists {
+	post, err := h.postService.UpdatePost(id, req.Title, req.Content, req.Author)
+	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}
@@ -99,13 +99,9 @@ func (h *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 // DeletePost 删除博客文章
 func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "无效的 ID", http.StatusBadRequest)
-		return
-	}
+	id := vars["id"]
 
-	if !h.postService.DeletePost(id) {
+	if err := h.postService.DeletePost(id); err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}

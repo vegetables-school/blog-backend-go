@@ -1,106 +1,156 @@
 package services
 
 import (
-	"sync"
+	"context"
 	"time"
 
 	"blog/models"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // PostService 处理博客文章的业务逻辑
 type PostService struct {
-	posts   map[int]*models.Blog
-	nextID  int
-	postsMu sync.RWMutex
+	collection *mongo.Collection
 }
 
 // NewPostService 创建新的PostService实例
-func NewPostService() *PostService {
+func NewPostService(client *mongo.Client, dbName, collectionName string) *PostService {
+	collection := client.Database(dbName).Collection(collectionName)
 	return &PostService{
-		posts:  make(map[int]*models.Blog),
-		nextID: 1,
+		collection: collection,
 	}
 }
 
 // GetAllPosts 获取所有博客文章
-func (s *PostService) GetAllPosts() []*models.Blog {
-	s.postsMu.RLock()
-	defer s.postsMu.RUnlock()
+func (s *PostService) GetAllPosts() ([]*models.Blog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	postList := make([]*models.Blog, 0, len(s.posts))
-	for _, post := range s.posts {
-		postList = append(postList, post)
+	cursor, err := s.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
 	}
-	return postList
+	defer cursor.Close(ctx)
+
+	var posts []*models.Blog
+	if err = cursor.All(ctx, &posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
 }
 
 // GetPostByID 根据ID获取单篇博客文章
-func (s *PostService) GetPostByID(id int) (*models.Blog, bool) {
-	s.postsMu.RLock()
-	defer s.postsMu.RUnlock()
+func (s *PostService) GetPostByID(id string) (*models.Blog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	post, exists := s.posts[id]
-	return post, exists
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var post models.Blog
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&post)
+	if err != nil {
+		return nil, err
+	}
+	return &post, nil
 }
 
 // CreatePost 创建新博客文章
-func (s *PostService) CreatePost(title, content, author string) *models.Blog {
-	s.postsMu.Lock()
-	defer s.postsMu.Unlock()
+func (s *PostService) CreatePost(title, content, author string) (*models.Blog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	post := &models.Blog{
-		ID:        s.nextID,
+		ID:        primitive.NewObjectID(),
 		Title:     title,
 		Content:   content,
 		Author:    author,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	s.posts[s.nextID] = post
-	s.nextID++
-	return post
+
+	_, err := s.collection.InsertOne(ctx, post)
+	if err != nil {
+		return nil, err
+	}
+	return post, nil
 }
 
 // UpdatePost 更新博客文章
-func (s *PostService) UpdatePost(id int, title, content, author string) (*models.Blog, bool) {
-	s.postsMu.Lock()
-	defer s.postsMu.Unlock()
+func (s *PostService) UpdatePost(id string, title, content, author string) (*models.Blog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	post, exists := s.posts[id]
-	if !exists {
-		return nil, false
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
 	}
 
-	post.Title = title
-	post.Content = content
-	post.Author = author
-	post.UpdatedAt = time.Now()
-	return post, true
+	update := bson.M{
+		"$set": bson.M{
+			"title":      title,
+			"content":    content,
+			"author":     author,
+			"updated_at": time.Now(),
+		},
+	}
+
+	_, err = s.collection.UpdateOne(ctx, bson.M{"_id": objID}, update)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取更新后的文档
+	var post models.Blog
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&post)
+	if err != nil {
+		return nil, err
+	}
+	return &post, nil
 }
 
 // DeletePost 删除博客文章
-func (s *PostService) DeletePost(id int) bool {
-	s.postsMu.Lock()
-	defer s.postsMu.Unlock()
+func (s *PostService) DeletePost(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	_, exists := s.posts[id]
-	if !exists {
-		return false
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
 	}
 
-	delete(s.posts, id)
-	return true
+	_, err = s.collection.DeleteOne(ctx, bson.M{"_id": objID})
+	return err
 }
 
 // InitializeSampleData 初始化示例数据
-func (s *PostService) InitializeSampleData() {
-	s.posts[1] = &models.Blog{
-		ID:        1,
+func (s *PostService) InitializeSampleData() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 检查是否已有数据
+	count, err := s.collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil // 已有数据，跳过初始化
+	}
+
+	post := &models.Blog{
+		ID:        primitive.NewObjectID(),
 		Title:     "欢迎使用 Go 博客系统",
 		Content:   "这是第一篇博客文章。Go 是一门很棒的语言！",
 		Author:    "管理员",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	s.nextID = 2
+
+	_, err = s.collection.InsertOne(ctx, post)
+	return err
 }
