@@ -17,9 +17,9 @@ import (
 
 func main() {
 	// MongoDB 连接字符串
-	mongoURI := "mongodb://localhost:27017" // 可以从环境变量或配置文件中获取
-	dbName := "blogdb"
-	collectionName := "posts"
+	mongoURI := "mongodb://localhost:27017"
+	dbName := "blogs-db"
+	collectionName := "blogs"
 
 	// 连接到 MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
