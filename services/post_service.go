@@ -60,8 +60,8 @@ func (s *PostService) GetPostByID(id string) (*models.Blog, error) {
 	return &post, nil
 }
 
-// CreatePost 创建新博客文章
-func (s *PostService) CreatePost(title, content, author string) (*models.Blog, error) {
+// CreateBlog 创建新博客文章
+func (s *PostService) CreateBlog(title, content, author string) (*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

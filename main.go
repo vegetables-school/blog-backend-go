@@ -19,7 +19,7 @@ func main() {
 	// MongoDB 连接字符串
 	mongoURI := "mongodb://localhost:27017"
 	dbName := "blogs-db"
-	collectionName := "blogs"
+	collectionName := "blogs-test"
 
 	// 连接到 MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -59,7 +59,7 @@ func main() {
 	// 定义 API 端点
 	r.HandleFunc("/api/posts", postHandler.GetPosts).Methods("GET")
 	r.HandleFunc("/api/posts/{id}", postHandler.GetPost).Methods("GET")
-	r.HandleFunc("/api/posts", postHandler.CreatePost).Methods("POST")
+	r.HandleFunc("/api/createBlog", postHandler.CreateBlog).Methods("POST")
 	r.HandleFunc("/api/posts/{id}", postHandler.UpdatePost).Methods("PUT")
 	r.HandleFunc("/api/posts/{id}", postHandler.DeletePost).Methods("DELETE")
 
@@ -70,7 +70,7 @@ func main() {
 	}).Methods("GET")
 
 	// 启动服务器
-	port := ":8080"
-	fmt.Printf("博客服务器启动在端口 %s\n", port)
+	port := ":88"
+	fmt.Printf("博客服务器启动在 http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))
 }

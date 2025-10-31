@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"blog/services"
+
 	"github.com/gorilla/mux"
 )
 
@@ -47,8 +48,8 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(post)
 }
 
-// CreatePost 创建新博客文章
-func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
+// CreateBlog 创建新博客文章
+func (h *PostHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
@@ -59,7 +60,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postService.CreatePost(req.Title, req.Content, req.Author)
+	post, err := h.postService.CreateBlog(req.Title, req.Content, req.Author)
 	if err != nil {
 		http.Error(w, "创建文章失败", http.StatusInternalServerError)
 		return
