@@ -43,25 +43,25 @@ func main() {
 	fmt.Println("成功连接到 MongoDB")
 
 	// 初始化服务
-	postService := services.NewPostService(client, dbName, collectionName)
+	blogService := services.NewBlogService(client, dbName, collectionName)
 
 	// 初始化示例数据
-	if err := postService.InitializeSampleData(); err != nil {
+	if err := blogService.InitializeSampleData(); err != nil {
 		log.Fatal("初始化示例数据失败:", err)
 	}
 
 	// 初始化处理器
-	postHandler := handlers.NewPostHandler(postService)
+	blogHandler := handlers.NewBlogHandler(blogService)
 
 	// 创建路由
 	r := mux.NewRouter()
 
 	// 定义 API 端点
-	r.HandleFunc("/api/posts", postHandler.GetPosts).Methods("GET")
-	r.HandleFunc("/api/posts/{id}", postHandler.GetPost).Methods("GET")
-	r.HandleFunc("/api/createBlog", postHandler.CreateBlog).Methods("POST")
-	r.HandleFunc("/api/posts/{id}", postHandler.UpdatePost).Methods("PUT")
-	r.HandleFunc("/api/posts/{id}", postHandler.DeletePost).Methods("DELETE")
+	r.HandleFunc("/api/blogs", blogHandler.GetBlogs).Methods("GET")
+	r.HandleFunc("/api/blogs/{id}", blogHandler.GetBlog).Methods("GET")
+	r.HandleFunc("/api/createBlog", blogHandler.CreateBlog).Methods("POST")
+	r.HandleFunc("/api/blogs/{id}", blogHandler.UpdateBlog).Methods("PUT")
+	r.HandleFunc("/api/blogs/{id}", blogHandler.DeleteBlog).Methods("DELETE")
 
 	// 健康检查端点
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

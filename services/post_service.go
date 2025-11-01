@@ -11,21 +11,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// PostService 处理博客文章的业务逻辑
-type PostService struct {
+// BlogService 处理博客文章的业务逻辑
+type BlogService struct {
 	collection *mongo.Collection
 }
 
-// NewPostService 创建新的PostService实例
-func NewPostService(client *mongo.Client, dbName, collectionName string) *PostService {
+// NewBlogService 创建新的BlogService实例
+func NewBlogService(client *mongo.Client, dbName, collectionName string) *BlogService {
 	collection := client.Database(dbName).Collection(collectionName)
-	return &PostService{
+	return &BlogService{
 		collection: collection,
 	}
 }
 
-// GetAllPosts 获取所有博客文章
-func (s *PostService) GetAllPosts() ([]*models.Blog, error) {
+// GetAllBlogs 获取所有博客文章
+func (s *BlogService) GetAllBlogs() ([]*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -35,15 +35,15 @@ func (s *PostService) GetAllPosts() ([]*models.Blog, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var posts []*models.Blog
-	if err = cursor.All(ctx, &posts); err != nil {
+	var blogs []*models.Blog
+	if err = cursor.All(ctx, &blogs); err != nil {
 		return nil, err
 	}
-	return posts, nil
+	return blogs, nil
 }
 
-// GetPostByID 根据ID获取单篇博客文章
-func (s *PostService) GetPostByID(id string) (*models.Blog, error) {
+// GetBlogByID 根据ID获取单篇博客文章
+func (s *BlogService) GetBlogByID(id string) (*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -52,16 +52,16 @@ func (s *PostService) GetPostByID(id string) (*models.Blog, error) {
 		return nil, err
 	}
 
-	var post models.Blog
-	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&post)
+	var blog models.Blog
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&blog)
 	if err != nil {
 		return nil, err
 	}
-	return &post, nil
+	return &blog, nil
 }
 
 // CreateBlog 创建新博客文章
-func (s *PostService) CreateBlog(title, content, author string) (*models.Blog, error) {
+func (s *BlogService) CreateBlog(title, content, author string) (*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -81,8 +81,8 @@ func (s *PostService) CreateBlog(title, content, author string) (*models.Blog, e
 	return post, nil
 }
 
-// UpdatePost 更新博客文章
-func (s *PostService) UpdatePost(id string, title, content, author string) (*models.Blog, error) {
+// UpdateBlog 更新博客文章
+func (s *BlogService) UpdateBlog(id string, title, content, author string) (*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -106,16 +106,16 @@ func (s *PostService) UpdatePost(id string, title, content, author string) (*mod
 	}
 
 	// 获取更新后的文档
-	var post models.Blog
-	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&post)
+	var blog models.Blog
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&blog)
 	if err != nil {
 		return nil, err
 	}
-	return &post, nil
+	return &blog, nil
 }
 
-// DeletePost 删除博客文章
-func (s *PostService) DeletePost(id string) error {
+// DeleteBlog 删除博客文章
+func (s *BlogService) DeleteBlog(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -129,7 +129,7 @@ func (s *PostService) DeletePost(id string) error {
 }
 
 // InitializeSampleData 初始化示例数据
-func (s *PostService) InitializeSampleData() error {
+func (s *BlogService) InitializeSampleData() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

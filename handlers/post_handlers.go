@@ -9,47 +9,47 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// PostHandler 处理博客文章的HTTP请求
-type PostHandler struct {
-	postService *services.PostService
+// BlogHandler 处理博客文章的HTTP请求
+type BlogHandler struct {
+	blogService *services.BlogService
 }
 
-// NewPostHandler 创建新的PostHandler实例
-func NewPostHandler(postService *services.PostService) *PostHandler {
-	return &PostHandler{
-		postService: postService,
+// NewBlogHandler 创建新的BlogHandler实例
+func NewBlogHandler(blogService *services.BlogService) *BlogHandler {
+	return &BlogHandler{
+		blogService: blogService,
 	}
 }
 
-// GetPosts 获取所有博客文章
-func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.postService.GetAllPosts()
+// GetBlogs 获取所有博客文章
+func (h *BlogHandler) GetBlogs(w http.ResponseWriter, r *http.Request) {
+	blogs, err := h.blogService.GetAllBlogs()
 	if err != nil {
 		http.Error(w, "获取文章失败", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(posts)
+	json.NewEncoder(w).Encode(blogs)
 }
 
-// GetPost 获取单篇博客文章
-func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
+// GetBlog 获取单篇博客文章
+func (h *BlogHandler) GetBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	post, err := h.postService.GetPostByID(id)
+	blog, err := h.blogService.GetBlogByID(id)
 	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(post)
+	json.NewEncoder(w).Encode(blog)
 }
 
 // CreateBlog 创建新博客文章
-func (h *PostHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
+func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
@@ -60,7 +60,7 @@ func (h *PostHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postService.CreateBlog(req.Title, req.Content, req.Author)
+	blog, err := h.blogService.CreateBlog(req.Title, req.Content, req.Author)
 	if err != nil {
 		http.Error(w, "创建文章失败", http.StatusInternalServerError)
 		return
@@ -68,11 +68,11 @@ func (h *PostHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(post)
+	json.NewEncoder(w).Encode(blog)
 }
 
-// UpdatePost 更新博客文章
-func (h *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
+// UpdateBlog 更新博客文章
+func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -86,22 +86,22 @@ func (h *PostHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.postService.UpdatePost(id, req.Title, req.Content, req.Author)
+	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, req.Author)
 	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(post)
+	json.NewEncoder(w).Encode(blog)
 }
 
-// DeletePost 删除博客文章
-func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
+// DeleteBlog 删除博客文章
+func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	if err := h.postService.DeletePost(id); err != nil {
+	if err := h.blogService.DeleteBlog(id); err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
 	}
