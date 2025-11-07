@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"blog/middleware"
 	"blog/services"
 
 	"github.com/gorilla/mux"
@@ -53,14 +54,20 @@ func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
-		Author  string `json:"author"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效的请求数据", http.StatusBadRequest)
 		return
 	}
 
-	blog, err := h.blogService.CreateBlog(req.Title, req.Content, req.Author)
+	// 从认证上下文中获取作者信息
+	author := middleware.GetUsername(r)
+	if author == "" {
+		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		return
+	}
+
+	blog, err := h.blogService.CreateBlog(req.Title, req.Content, author)
 	if err != nil {
 		http.Error(w, "创建文章失败", http.StatusInternalServerError)
 		return
@@ -79,14 +86,23 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
-		Author  string `json:"author"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效的请求数据", http.StatusBadRequest)
 		return
 	}
 
-	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, req.Author)
+	// 从认证上下文中获取用户信息
+	username := middleware.GetUsername(r)
+	if username == "" {
+		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		return
+	}
+
+	// 检查是否是文章作者（这里简化了，实际应该从数据库检查）
+	// TODO: 添加权限检查
+
+	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, username)
 	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return
@@ -100,6 +116,16 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	// 从认证上下文中获取用户信息
+	username := middleware.GetUsername(r)
+	if username == "" {
+		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		return
+	}
+
+	// 检查是否是文章作者（这里简化了，实际应该从数据库检查）
+	// TODO: 添加权限检查
 
 	if err := h.blogService.DeleteBlog(id); err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)

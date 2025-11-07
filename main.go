@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"blog/handlers"
+	"blog/middleware"
 	"blog/services"
 
 	"github.com/gorilla/mux"
@@ -18,8 +19,10 @@ import (
 func main() {
 	// MongoDB 连接字符串
 	mongoURI := "mongodb://localhost:27017"
-	dbName := "blogs-db"
-	collectionName := "blogs-test"
+	// MongoDB 数据库名称
+	dbName := "blogs-db-test"
+	// MongoDB 集合名称
+	collectionName := "blogs-db"
 
 	// 连接到 MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -45,6 +48,10 @@ func main() {
 	// 初始化服务
 	blogService := services.NewBlogService(client, dbName, collectionName)
 
+	// 初始化认证服务
+	jwtSecret := "your-secret-key" // 在生产环境中应该从环境变量读取
+	authService := services.NewAuthService(client, dbName, "users", jwtSecret)
+
 	// 初始化示例数据
 	if err := blogService.InitializeSampleData(); err != nil {
 		log.Fatal("初始化示例数据失败:", err)
@@ -52,6 +59,10 @@ func main() {
 
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	// 初始化中间件
+	jwtMiddleware := middleware.NewJWTMiddleware(authService)
 
 	// 创建路由
 	r := mux.NewRouter()
@@ -59,9 +70,13 @@ func main() {
 	// 定义 API 端点
 	r.HandleFunc("/api/blogs", blogHandler.GetBlogs).Methods("GET")
 	r.HandleFunc("/api/blogs/{id}", blogHandler.GetBlog).Methods("GET")
-	r.HandleFunc("/api/createBlog", blogHandler.CreateBlog).Methods("POST")
-	r.HandleFunc("/api/blogs/{id}", blogHandler.UpdateBlog).Methods("PUT")
-	r.HandleFunc("/api/blogs/{id}", blogHandler.DeleteBlog).Methods("DELETE")
+	r.HandleFunc("/api/createBlog", jwtMiddleware.Authenticate(blogHandler.CreateBlog)).Methods("POST")
+	r.HandleFunc("/api/blogs/{id}", jwtMiddleware.Authenticate(blogHandler.UpdateBlog)).Methods("PUT")
+	r.HandleFunc("/api/blogs/{id}", jwtMiddleware.Authenticate(blogHandler.DeleteBlog)).Methods("DELETE")
+
+	// 认证端点
+	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
+	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
 
 	// 健康检查端点
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
