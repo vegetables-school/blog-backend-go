@@ -65,7 +65,7 @@ func (s *BlogService) CreateBlog(title, content, author string) (*models.Blog, e
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	post := &models.Blog{
+	blog := &models.Blog{
 		ID:        primitive.NewObjectID(),
 		Title:     title,
 		Content:   content,
@@ -74,11 +74,11 @@ func (s *BlogService) CreateBlog(title, content, author string) (*models.Blog, e
 		UpdatedAt: time.Now(),
 	}
 
-	_, err := s.collection.InsertOne(ctx, post)
+	_, err := s.collection.InsertOne(ctx, blog)
 	if err != nil {
 		return nil, err
 	}
-	return post, nil
+	return blog, nil
 }
 
 // UpdateBlog 更新博客文章
@@ -125,32 +125,5 @@ func (s *BlogService) DeleteBlog(id string) error {
 	}
 
 	_, err = s.collection.DeleteOne(ctx, bson.M{"_id": objID})
-	return err
-}
-
-// InitializeSampleData 初始化示例数据
-func (s *BlogService) InitializeSampleData() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// 检查是否已有数据
-	count, err := s.collection.CountDocuments(ctx, bson.M{})
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil // 已有数据，跳过初始化
-	}
-
-	post := &models.Blog{
-		ID:        primitive.NewObjectID(),
-		Title:     "欢迎使用 Go 博客系统",
-		Content:   "这是第一篇博客文章。Go 是一门很棒的语言！",
-		Author:    "管理员",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	_, err = s.collection.InsertOne(ctx, post)
 	return err
 }

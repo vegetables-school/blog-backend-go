@@ -9,6 +9,7 @@ import (
 
 	"blog/handlers"
 	"blog/middleware"
+	"blog/routes"
 	"blog/services"
 
 	"github.com/gorilla/mux"
@@ -52,11 +53,6 @@ func main() {
 	jwtSecret := "your-secret-key" // 在生产环境中应该从环境变量读取
 	authService := services.NewAuthService(client, dbName, "users", jwtSecret)
 
-	// 初始化示例数据
-	if err := blogService.InitializeSampleData(); err != nil {
-		log.Fatal("初始化示例数据失败:", err)
-	}
-
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -67,16 +63,8 @@ func main() {
 	// 创建路由
 	r := mux.NewRouter()
 
-	// 定义 API 端点
-	r.HandleFunc("/api/blogs", blogHandler.GetBlogs).Methods("GET")
-	r.HandleFunc("/api/blogs/{id}", blogHandler.GetBlog).Methods("GET")
-	r.HandleFunc("/api/createBlog", jwtMiddleware.Authenticate(blogHandler.CreateBlog)).Methods("POST")
-	r.HandleFunc("/api/blogs/{id}", jwtMiddleware.Authenticate(blogHandler.UpdateBlog)).Methods("PUT")
-	r.HandleFunc("/api/blogs/{id}", jwtMiddleware.Authenticate(blogHandler.DeleteBlog)).Methods("DELETE")
-
-	// 认证端点
-	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
+	// 注册路由（集中管理）
+	routes.RegisterRoutes(r, blogHandler, authHandler, jwtMiddleware)
 
 	// 健康检查端点
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
