@@ -10,4 +10,6 @@ import (
 func RegisterPublicRoutes(r *mux.Router, blogHandler *handlers.BlogHandler, _ *handlers.AuthHandler) {
 	// 获取单篇博客（公开访问）
 	r.HandleFunc("/api/blog/{id}", blogHandler.GetBlog).Methods("GET")
+	// 分页获取博客列表（公开访问）
+	r.HandleFunc("/api/blogs", blogHandler.GetBlogsPaginated).Methods("GET")
 }

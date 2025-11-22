@@ -15,6 +15,6 @@ func RegisterAdminRoutes(r *mux.Router, blogHandler *handlers.BlogHandler, authH
 
 	// 博客管理端点（需要鉴权的写操作）
 	r.HandleFunc("/api/admin/blog", jwtMiddleware.Authenticate(blogHandler.CreateBlog)).Methods("POST")
-	r.HandleFunc("/api/admin/blog/{id}", jwtMiddleware.Authenticate(blogHandler.UpdateBlog)).Methods("PUT")
 	r.HandleFunc("/api/admin/blog/{id}", jwtMiddleware.Authenticate(blogHandler.DeleteBlog)).Methods("DELETE")
+	r.HandleFunc("/api/admin/blog/{id}", jwtMiddleware.Authenticate(blogHandler.UpdateBlog)).Methods("PUT")
 }

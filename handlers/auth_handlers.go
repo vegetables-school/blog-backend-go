@@ -51,7 +51,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(AuthUserResponse{Data: user})
 }
 
 // Login 用户登录
@@ -75,5 +75,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(authResponse)
+	var loginResp LoginResponse
+	loginResp.Data.Token = authResponse.Token
+	loginResp.Data.User = &authResponse.User
+	json.NewEncoder(w).Encode(loginResp)
 }
