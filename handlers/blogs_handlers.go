@@ -133,17 +133,19 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	var req struct {
-		Title   string   `json:"title"`
-		Content string   `json:"content"`
+		Title   *string  `json:"title,omitempty"`
+		Content *string  `json:"content,omitempty"`
+		Author  *string  `json:"author,omitempty"`
 		Tags    []string `json:"tags,omitempty"`
 		Show    *bool    `json:"show,omitempty"`
+		Views   *int64   `json:"views,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效的请求数据", http.StatusBadRequest)
 		return
 	}
 
-	// 从认证上下文中获取用户信息
+	// 从认证上下文中获取用户信息（用于权限校验）
 	username := middleware.GetUsername(r)
 	if username == "" {
 		http.Error(w, "未认证用户", http.StatusUnauthorized)
@@ -153,7 +155,7 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	// 检查是否是文章作者（这里简化了，实际应该从数据库检查）
 	// TODO: 添加权限检查
 
-	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, username, req.Tags, req.Show)
+	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, req.Author, req.Tags, req.Show, req.Views)
 	if err != nil {
 		http.Error(w, "文章未找到", http.StatusNotFound)
 		return

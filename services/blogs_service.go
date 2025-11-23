@@ -118,7 +118,7 @@ func (s *BlogService) CreateBlog(title, content, author string, tags []string, s
 }
 
 // UpdateBlog 更新博客文章
-func (s *BlogService) UpdateBlog(id string, title, content, author string, tags []string, show *bool) (*models.Blog, error) {
+func (s *BlogService) UpdateBlog(id string, title, content, author *string, tags []string, show *bool, views *int64) (*models.Blog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -128,10 +128,17 @@ func (s *BlogService) UpdateBlog(id string, title, content, author string, tags 
 	}
 
 	setFields := bson.M{
-		"title":      title,
-		"content":    content,
-		"author":     author,
 		"updated_at": time.Now(),
+	}
+
+	if title != nil {
+		setFields["title"] = *title
+	}
+	if content != nil {
+		setFields["content"] = *content
+	}
+	if author != nil {
+		setFields["author"] = *author
 	}
 
 	// tags == nil -> don't change tags; empty slice -> clear tags
@@ -141,6 +148,11 @@ func (s *BlogService) UpdateBlog(id string, title, content, author string, tags 
 
 	if show != nil {
 		setFields["show"] = *show
+	}
+
+	// views == nil -> don't change; non-nil -> set to provided value
+	if views != nil {
+		setFields["views"] = *views
 	}
 
 	update := bson.M{"$set": setFields}
