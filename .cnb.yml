@@ -10,7 +10,7 @@
         - name: sync to github
           image: tencentcom/git-sync
           settings:
-            target_url: https://github.com/RSS1102/blog.git
+            target_url: https://github.com/vegetables-school/blog-backend-go.git
             auth_type: https
             username: RSS1102
             password: ${GITHUB_ALL_BLOG_SYNC_TOKEN}
