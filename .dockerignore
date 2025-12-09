@@ -1,0 +1,11 @@
+.git
+**/tmp
+**/node_modules
+**/vendor
+*.log
+*.env
+Dockerfile
+docker-compose.yml
+*.exe
+*.test
+*.out

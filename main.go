@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"blog/handlers"
@@ -18,12 +19,12 @@ import (
 )
 
 func main() {
-	// MongoDB 连接字符串
-	mongoURI := "mongodb://localhost:27017"
+	// 从环境变量读取配置，若未设置使用默认值
+	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	// MongoDB 数据库名称
-	dbName := "blogs-db-test"
+	dbName := getEnv("DB_NAME", "blogs-db-test")
 	// MongoDB 集合名称
-	collectionName := "blogs-db"
+	collectionName := getEnv("COLLECTION_NAME", "blogs-db")
 
 	// 连接到 MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -50,7 +51,7 @@ func main() {
 	blogService := services.NewBlogService(client, dbName, collectionName)
 
 	// 初始化认证服务
-	jwtSecret := "your-secret-key" // 在生产环境中应该从环境变量读取
+	jwtSecret := getEnv("JWT_SECRET", "your-secret-key") // 在生产环境中请通过环境变量注入
 	authService := services.NewAuthService(client, dbName, "users", jwtSecret)
 
 	// 初始化处理器
@@ -73,7 +74,17 @@ func main() {
 	}).Methods("GET")
 
 	// 启动服务器
-	port := ":88"
-	fmt.Printf("博客服务器启动在 http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	port := getEnv("PORT", "8080")
+	addr := fmt.Sprintf(":%s", port)
+	fmt.Printf("博客服务器启动在 http://localhost:%s\n", port)
+	log.Fatal(http.ListenAndServe(addr, r))
+
+}
+
+// getEnv 从环境变量读取值，若为空则返回默认值
+func getEnv(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultVal
 }

@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - DB_NAME=blogs-db-test
+      - COLLECTION_NAME=blogs-db
+      - JWT_SECRET=dev-secret
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:
+    driver: local
