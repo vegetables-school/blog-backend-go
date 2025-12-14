@@ -22,7 +22,7 @@ func main() {
 	// 从环境变量读取配置，若未设置使用默认值
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	// MongoDB 数据库名称
-	dbName := getEnv("DB_NAME", "blogs-db-test")
+	dbName := getEnv("DB_NAME", "blogs-db-dev")
 	// MongoDB 集合名称
 	collectionName := getEnv("COLLECTION_NAME", "blogs-db")
 
