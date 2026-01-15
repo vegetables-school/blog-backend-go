@@ -3,10 +3,11 @@ services:
   app:
     build: .
     restart: unless-stopped
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
-      - .env
-    environment:
-      - MONGO_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}
+      - /app/.env
     ports:
       - "8080:8080"
     volumes:

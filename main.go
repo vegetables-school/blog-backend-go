@@ -14,16 +14,17 @@ import (
 	"blog/services"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
+	// 加载挂载的 .env 文件
+	_ = godotenv.Load("/app/.env") // 不存在时忽略，优先环境变量
 	// 从环境变量读取配置，若未设置使用默认值
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
-	// MongoDB 数据库名称
 	dbName := getEnv("DB_NAME", "blogs-db-dev")
-	// MongoDB 集合名称
 	collectionName := getEnv("COLLECTION_NAME", "blogs-db")
 
 	// 连接到 MongoDB
@@ -51,7 +52,7 @@ func main() {
 	blogService := services.NewBlogService(client, dbName, collectionName)
 
 	// 初始化认证服务
-	jwtSecret := getEnv("JWT_SECRET", "your-secret-key") // 在生产环境中请通过环境变量注入
+	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret") // 在生产环境中请通过环境变量注入
 	authService := services.NewAuthService(client, dbName, "users", jwtSecret)
 
 	// 初始化处理器
