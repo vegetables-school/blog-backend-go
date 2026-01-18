@@ -22,6 +22,8 @@ import (
 func main() {
 	// 加载挂载的 .env 文件
 	_ = godotenv.Load("/app/.env") // 不存在时忽略，优先环境变量
+	// 打印 TEST_ENV 环境变量，便于判断 .env 是否被读取
+	fmt.Println("TEST_ENV:", os.Getenv("TEST_ENV"))
 	// 从环境变量读取配置，若未设置使用默认值
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	dbName := getEnv("DB_NAME", "blogs-db-dev")
