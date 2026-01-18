@@ -14,14 +14,16 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
 COPY . .
 
 # Build a static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags='-s -w' -o /blog-app ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags='-s -w' -o /blog-backend-go-dev ./
 
 ### Final image
 FROM alpine:3.18
 RUN apk add --no-cache ca-certificates
 WORKDIR /
-COPY --from=builder /blog-app /blog-app
+COPY --from=builder /blog-backend-go-dev /blog-backend-go-dev
 
 ENV PORT=8080
 EXPOSE 8080
-ENTRYPOINT ["/blog-app"]
+# ENTRYPOINT 指定容器启动时默认执行的主命令。
+# 这里设置为 /blog-backend-go-dev，容器启动后会自动运行该可执行文件。
+ENTRYPOINT ["/blog-backend-go-dev"]

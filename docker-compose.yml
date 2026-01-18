@@ -10,4 +10,5 @@ services:
       - /home/env/.env.blog-backend-go.dev
     ports:
       - "8080:8080"
-    # volumes: 如需其他挂载可在此添加
+    volumes:
+      - /opt/1panel/docker/compose:/blog-backend-go-dev
