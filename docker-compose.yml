@@ -7,8 +7,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:
-      - /app/.env
+      - /home/env/.env.blog-backend-go.dev
     ports:
       - "8080:8080"
-    volumes:
-       - ./env/.env.blog-backend-go.dev:/app/.env
+    # volumes: 如需其他挂载可在此添加
