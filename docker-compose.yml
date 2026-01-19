@@ -6,9 +6,9 @@ services:
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    env_file:
-      - /home/env/.env.blog-backend-go.dev
+    # env_file:
+    #   - /home/env/.env.blog-backend-go.dev
     ports:
       - "8080:8080"
     volumes:
-      - /opt/1panel/docker/compose:/blog-backend-go-dev
+      - /data/docker-volumes:/blog-backend-go-dev
