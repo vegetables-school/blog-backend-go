@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 )
 
@@ -67,6 +68,7 @@ func main() {
 	// addr := fmt.Sprintf(":%s", port)
 	fmt.Printf("博客服务器启动在 http://localhost:%s\n", port)
 	// log.Fatal(http.ListenAndServe(addr, r))
+	http.ListenAndServe(":8080", nil)
 
 }
 
