@@ -14,3 +14,4 @@ services:
 
 volumes:
   blog-backend-go-dev:
+    external: true
