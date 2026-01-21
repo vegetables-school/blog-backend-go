@@ -18,7 +18,7 @@ import (
 func main() {
 	// 加载挂载的 .env 文件
 	_ = godotenv.Load("/blog-backend-go-dev/.env")
-	fmt.Printf("MongoDB 配置: 数据库=%s, 集合=%s\n", os.Getenv("MONGODB_DATABASE"), os.Getenv("COLLECTION_NAME"))
+	fmt.Printf("MongoDB 配置: URI=%s, 数据库=%s, 集合=%s\n", os.Getenv("MONGODB_URI"), os.Getenv("MONGODB_DATABASE"), os.Getenv("COLLECTION_NAME"))
 
 	// 初始化 MongoDB（自动配置）
 	client, err := config.InitMongo()
@@ -33,7 +33,7 @@ func main() {
 	fmt.Println("成功连接到 MongoDB")
 
 	// 初始化服务
-	blogService := services.NewBlogService(client, config.MongoDatabase, getEnv("COLLECTION_NAME", "blogs-db"))
+	blogService := services.NewBlogService(client, config.MongoDatabase, getEnv("COLLECTION_NAME", "blogs-dev"))
 
 	// 初始化认证服务
 	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret") // 在生产环境中请通过环境变量注入
