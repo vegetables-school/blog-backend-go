@@ -4,7 +4,36 @@
 
 ```bash
 docker ps -a
+
+---
+
+## 1Panel 卷挂载说明
+
+### 1. 在 1Panel 创建卷
+
+- 卷名称：`blog-backend-go-dev`
+- 挂载点（宿主机目录）：`/var/lib/docker/volumes/blog-backend-go-dev/_data`
+
+### 2. docker-compose.yml 配置
+
+```yaml
+services:
+	app:
+		# ...其他配置...
+		volumes:
+			- blog-backend-go-dev:/blog-backend-go-dev
+
+volumes:
+	blog-backend-go-dev:
+		external: true
 ```
+
+### 3. 1Panel 容器目录配置
+
+- 服务器目录：`/var/lib/docker/volumes/blog-backend-go-dev/_data`
+- 容器目录：`/blog-backend-go-dev`
+
+这样配置后，容器内 `/blog-backend-go-dev` 目录的数据会自动同步到宿主机卷。
 
 ### 作用说明
 
