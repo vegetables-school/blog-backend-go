@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # env_file:
-    #   - /home/env/.env.blog-backend-go.dev
     ports:
       - "8080:8080"
     volumes:

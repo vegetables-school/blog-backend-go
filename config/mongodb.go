@@ -11,12 +11,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type MongoConfig struct {
+	URI      string
+	Database string
+	Client   *mongo.Client
+}
+
 var (
-	mongoClient *mongo.Client
-	mongoOnce   sync.Once
+	mongoCfg  *MongoConfig
+	mongoOnce sync.Once
 )
 
-// getEnv 获取环境变量，若不存在则返回默认值
 func getEnv(key, defaultVal string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
@@ -24,43 +29,62 @@ func getEnv(key, defaultVal string) string {
 	return defaultVal
 }
 
-// InitMongo 初始化 MongoDB 连接（只执行一次）
-func InitMongo() (*mongo.Client, error) {
+// InitMongo 初始化 MongoDB 配置和连接。
+// 返回 MongoConfig 结构体（包含连接信息）和 error（初始化失败时返回错误）。
+func InitMongo() (*MongoConfig, error) {
 	var err error
 	mongoOnce.Do(func() {
+		uri := getEnv("MONGODB_URI", "mongodb://mongo:27017")
+		db := getEnv("MONGODB_DATABASE", "blog")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		mongoURI := getEnv("MONGODB_URI", "mongodb://localhost:27017")
-		clientOpts := options.Client().ApplyURI(mongoURI)
-		mongoClient, err = mongo.Connect(ctx, clientOpts)
-		if err != nil {
+		clientOpts := options.Client().ApplyURI(uri)
+		client, e := mongo.Connect(ctx, clientOpts)
+		if e != nil {
+			err = e
 			return
 		}
-		err = mongoClient.Ping(ctx, nil)
+		if e = client.Ping(ctx, nil); e != nil {
+			err = e
+			return
+		}
+		mongoCfg = &MongoConfig{
+			URI:      uri,
+			Database: db,
+			Client:   client,
+		}
 	})
 	if err != nil {
 		return nil, fmt.Errorf("MongoDB 初始化失败: %w", err)
 	}
-	return mongoClient, nil
+	return mongoCfg, nil
 }
 
-// GetMongoClient 获取 MongoDB 客户端
+// GetMongoClient 获取 MongoDB 客户端。
+// 返回 *mongo.Client 客户端对象。
 func GetMongoClient() *mongo.Client {
-	return mongoClient
+	if mongoCfg == nil {
+		return nil
+	}
+	return mongoCfg.Client
 }
 
-// GetMongoDatabase 获取 MongoDB 数据库对象（每次都从环境变量读取数据库名，支持动态切换）
+// GetMongoDatabase 获取 MongoDB 数据库对象。
+// 返回 *mongo.Database 数据库对象。
 func GetMongoDatabase() *mongo.Database {
-	dbName := getEnv("MONGODB_DATABASE", "blog")
-	return mongoClient.Database(dbName)
+	if mongoCfg == nil || mongoCfg.Client == nil {
+		return nil
+	}
+	return mongoCfg.Client.Database(mongoCfg.Database)
 }
 
-// CloseMongo 关闭 MongoDB 连接
+// CloseMongo 关闭 MongoDB 连接。
+// 返回 error，关闭失败时返回错误，否则返回 nil。
 func CloseMongo() error {
-	if mongoClient != nil {
+	if mongoCfg != nil && mongoCfg.Client != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		return mongoClient.Disconnect(ctx)
+		return mongoCfg.Client.Disconnect(ctx)
 	}
 	return nil
 }

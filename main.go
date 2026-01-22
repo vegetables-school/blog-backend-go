@@ -21,7 +21,7 @@ func main() {
 	fmt.Printf("MongoDB 配置: URI=%s, 数据库=%s, 集合=%s\n", os.Getenv("MONGODB_URI"), os.Getenv("MONGODB_DATABASE"), os.Getenv("COLLECTION_NAME"))
 
 	// 初始化 MongoDB（自动配置）
-	client, err := config.InitMongo()
+	mongoCfg, err := config.InitMongo()
 	if err != nil {
 		log.Fatal("MongoDB 初始化失败:", err)
 	}
@@ -33,11 +33,11 @@ func main() {
 	fmt.Println("成功连接到 MongoDB")
 
 	// 初始化服务
-	blogService := services.NewBlogService(client, config.GetMongoDatabase(), getEnv("COLLECTION_NAME", "blogs-dev"))
+	blogService := services.NewBlogService(mongoCfg.Client, mongoCfg.Database, getEnv("COLLECTION_NAME", "blogs-dev"))
 
 	// 初始化认证服务
 	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret") // 在生产环境中请通过环境变量注入
-	authService := services.NewAuthService(client, config.GetMongoDatabase(), "users", jwtSecret)
+	authService := services.NewAuthService(mongoCfg.Client, mongoCfg.Database, "users", jwtSecret)
 
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
