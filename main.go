@@ -33,11 +33,11 @@ func main() {
 	fmt.Println("成功连接到 MongoDB")
 
 	// 初始化服务
-	blogService := services.NewBlogService(client, config.MongoDatabase, getEnv("COLLECTION_NAME", "blogs-dev"))
+	blogService := services.NewBlogService(client, config.GetMongoDatabase(), getEnv("COLLECTION_NAME", "blogs-dev"))
 
 	// 初始化认证服务
 	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret") // 在生产环境中请通过环境变量注入
-	authService := services.NewAuthService(client, config.MongoDatabase, "users", jwtSecret)
+	authService := services.NewAuthService(client, config.GetMongoDatabase(), "users", jwtSecret)
 
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
