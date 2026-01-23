@@ -1,4 +1,4 @@
-## Mongo Express 配置说明
+# Mongo Express 配置说明
 
 以下为 `mongo-express` 的 docker-compose 配置示例，并对每一项进行了详细注释：
 
