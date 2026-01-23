@@ -34,3 +34,6 @@ Thumbs.db
 *.tmp
 *.swp
 *.env
+
+# Swagger UI 静态文件
+static/swagger/

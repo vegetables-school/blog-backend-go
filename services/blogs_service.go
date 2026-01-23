@@ -1,3 +1,30 @@
+package services
+
+import (
+	"context"
+	"time"
+
+	"blog/models"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+// BlogService 处理博客文章的业务逻辑
+type BlogService struct {
+	collection *mongo.Collection
+}
+
+// NewBlogService 创建新的BlogService实例
+func NewBlogService(client *mongo.Client, dbName, collectionName string) *BlogService {
+	collection := client.Database(dbName).Collection(collectionName)
+	return &BlogService{
+		collection: collection,
+	}
+}
+
 // GetBlogsByTagsWithPagination 分页获取包含所有指定标签的博客文章
 func (s *BlogService) GetBlogsByTagsWithPagination(tags []string, page, limit int64) ([]*models.Blog, int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -26,19 +53,6 @@ func (s *BlogService) GetBlogsByTagsWithPagination(tags []string, page, limit in
 	}
 	return blogs, total, nil
 }
-package services
-
-import (
-	"context"
-	"time"
-
-	"blog/models"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
 
 // BlogService 处理博客文章的业务逻辑
 type BlogService struct {

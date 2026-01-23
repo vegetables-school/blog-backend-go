@@ -1,3 +1,11 @@
+// @title 博客后端 API 文档
+// @version 1.0
+// @description 这是一个用 Go 编写的博客后端 API 示例，支持用户、博客、评论、点赞等功能。
+// @contact.name API Support
+// @contact.email youremail@example.com
+// @host localhost:8080
+// @BasePath /
+// @schemes http
 package main
 
 import (
@@ -13,6 +21,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	// _ "github.com/swaggo/gin-swagger" // 若后续切换 gin 框架可用
+	// _ "github.com/swaggo/files"
 )
 
 func main() {
@@ -52,6 +62,12 @@ func main() {
 
 	// 创建路由
 	r := mux.NewRouter()
+
+	// Swagger UI 静态文件路由
+	r.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", http.FileServer(http.Dir("static/swagger"))))
+
+	// Swagger 文档 JSON 路由（可选，方便 swagger-ui 访问）
+	r.PathPrefix("/docs/").Handler(http.StripPrefix("/docs/", http.FileServer(http.Dir("docs"))))
 
 	// 注册路由（集中管理）
 	routes.RegisterRoutes(r, blogHandler, authHandler, jwtMiddleware, commentHandler, likeHandler)

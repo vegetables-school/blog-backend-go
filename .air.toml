@@ -2,6 +2,9 @@
 # toml-lint: disable-all
 
 [build]
+  pre_cmd = "swag init; powershell -Command \"Expand-Archive -Path swagger-ui.zip -DestinationPath .\\static\\swagger -Force; \
+  $f=Join-Path $PWD 'static/swagger/swagger-initializer.js'; \
+  if (Test-Path $f) { (Get-Content $f) -replace 'url: .*,', 'url: \"/docs/swagger.json\",' | Set-Content $f -Encoding UTF8 }\""
   cmd = "go build -o ./tmp/main.exe ."
   bin = "./tmp/main.exe"
   delay = 1000

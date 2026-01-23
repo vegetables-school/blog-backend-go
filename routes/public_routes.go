@@ -3,15 +3,10 @@ package routes
 import (
 	"blog/handlers"
 	"blog/middleware"
+
 	"github.com/gorilla/mux"
 )
 
-	r.HandleFunc("/api/blog/{id}", blogHandler.GetBlog).Methods("GET")
-	// 分页获取博客列表（公开访问）
-	r.HandleFunc("/api/blogs", blogHandler.GetBlogsPaginated).Methods("GET")
-	r.HandleFunc("/api/blogs/search", blogHandler.SearchBlogsHandler).Methods("GET")
-	r.HandleFunc("/api/tags", blogHandler.GetAllTagsHandler).Methods("GET")
-	r.HandleFunc("/api/blogs/by-tags", blogHandler.GetBlogsByTagsHandler).Methods("GET")
 // RegisterPublicRoutes 注册前端可访问的公开路由：内容读取
 func RegisterPublicRoutes(
 	r *mux.Router,

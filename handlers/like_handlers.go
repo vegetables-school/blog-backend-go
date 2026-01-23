@@ -19,6 +19,15 @@ func NewLikeHandler(likeService *services.LikeService) *LikeHandler {
 
 // AddLikeHandler 新增点赞
 func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
+	// @Summary 点赞
+	// @Description 给博客点赞
+	// @Tags 点赞
+	// @Accept json
+	// @Produce json
+	// @Param data body models.Like true "点赞内容"
+	// @Success 201 {object} models.Like
+	// @Failure 400 {string} string "参数错误"
+	// @Router /api/like [post]
 	var req struct {
 		BlogID string `json:"blog_id"`
 	}
@@ -46,6 +55,15 @@ func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
 
 // RemoveLikeHandler 取消点赞（只能本人或管理员）
 func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) {
+	// @Summary 取消点赞
+	// @Description 取消对博客的点赞
+	// @Tags 点赞
+	// @Accept json
+	// @Produce json
+	// @Param data body models.Like true "点赞内容（含ID）"
+	// @Success 204 {string} string "取消成功"
+	// @Failure 404 {string} string "未找到"
+	// @Router /api/like [delete]
 	var req struct {
 		BlogID string `json:"blog_id"`
 	}

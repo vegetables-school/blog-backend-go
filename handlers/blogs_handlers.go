@@ -1,4 +1,36 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"blog/middleware"
+	"blog/services"
+
+	"github.com/gorilla/mux"
+)
+
+// BlogHandler 处理博客文章的HTTP请求
+type BlogHandler struct {
+	blogService *services.BlogService
+}
+
+// 标签相关请求体
+type TagRequest struct {
+	Tag string `json:"tag"`
+}
+
 // GetBlogsByTagsHandler 分页获取包含所有指定标签的文章
+// @Summary 分页获取包含所有指定标签的文章
+// @Description 根据标签数组分页获取所有包含这些标签的博客文章
+// @Tags 博客
+// @Param tag query string true "标签（可重复）"
+// @Param page query int false "页码"
+// @Param limit query int false "每页数量"
+// @Success 200 {object} BlogListResponse
+// @Failure 500 {string} string "获取文章失败"
+// @Router /api/blogs/by-tags [get]
 func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Request) {
 	tags := r.URL.Query()["tag"] // 支持多个 tag=xxx
 	pageStr := r.URL.Query().Get("page")
@@ -27,22 +59,10 @@ func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
-package handlers
-
-import (
-	"encoding/json"
-	"net/http"
-	"strconv"
-
-	"blog/middleware"
-	"blog/services"
-
-	"github.com/gorilla/mux"
-)
 
 // 标签相关请求体
 type TagRequest struct {
-    Tag string `json:"tag"`
+	Tag string `json:"tag"`
 }
 
 // BlogHandler 处理博客文章的HTTP请求
@@ -51,6 +71,16 @@ type BlogHandler struct {
 }
 
 // SearchBlogsHandler 支持模糊搜索和标签筛选
+// @Summary 博客模糊搜索与标签筛选
+// @Description 支持关键字和标签数组的分页搜索
+// @Tags 博客
+// @Param keyword query string false "关键字"
+// @Param tag query string false "标签（可重复）"
+// @Param page query int false "页码"
+// @Param limit query int false "每页数量"
+// @Success 200 {object} BlogListResponse
+// @Failure 500 {string} string "搜索失败"
+// @Router /api/blogs/search [get]
 func (h *BlogHandler) SearchBlogsHandler(w http.ResponseWriter, r *http.Request) {
 	keyword := r.URL.Query().Get("keyword")
 	tagsParam := r.URL.Query()["tag"] // 支持多个 tag=xxx
@@ -82,6 +112,12 @@ func (h *BlogHandler) SearchBlogsHandler(w http.ResponseWriter, r *http.Request)
 }
 
 // GetAllTagsHandler 获取所有标签
+// @Summary 获取所有标签
+// @Description 获取所有博客标签
+// @Tags 博客
+// @Success 200 {object} map[string][]string
+// @Failure 500 {string} string "获取标签失败"
+// @Router /api/tags [get]
 func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.blogService.GetAllTags()
 	if err != nil {

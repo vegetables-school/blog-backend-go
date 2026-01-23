@@ -1,0 +1,218 @@
+basePath: /
+definitions:
+  handlers.BlogListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Blog'
+        type: array
+      pagination:
+        $ref: '#/definitions/handlers.Pagination'
+    type: object
+  handlers.Pagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  models.Blog:
+    properties:
+      author:
+        description: 博客文章的作者
+        type: string
+      content:
+        description: 博客文章的内容
+        type: string
+      created_at:
+        description: 博客文章的创建时间
+        type: string
+      id:
+        description: 博客文章的唯一标识符
+        type: string
+      show:
+        description: 是否在前端展示
+        type: boolean
+      tags:
+        description: 内标签数组
+        items:
+          type: string
+        type: array
+      title:
+        description: 博客文章的标题
+        type: string
+      updated_at:
+        description: 博客文章的更新时间
+        type: string
+      views:
+        description: 浏览次数
+        type: integer
+    type: object
+  models.UserLoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserRegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: youremail@example.com
+    name: API Support
+  description: 这是一个用 Go 编写的博客后端 API 示例，支持用户、博客、评论、点赞等功能。
+  title: 博客后端 API 文档
+  version: "1.0"
+paths:
+  /api/admin/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口
+      parameters:
+      - description: 登录信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的请求数据
+          schema:
+            type: string
+      summary: 用户登录
+      tags:
+      - 用户
+  /api/admin/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 用户注册接口
+      parameters:
+      - description: 注册信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的请求数据
+          schema:
+            type: string
+        "403":
+          description: 注册功能暂时关闭
+          schema:
+            type: string
+      summary: 用户注册
+      tags:
+      - 用户
+  /api/blogs/by-tags:
+    get:
+      description: 根据标签数组分页获取所有包含这些标签的博客文章
+      parameters:
+      - description: 标签（可重复）
+        in: query
+        name: tag
+        required: true
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.BlogListResponse'
+        "500":
+          description: 获取文章失败
+          schema:
+            type: string
+      summary: 分页获取包含所有指定标签的文章
+      tags:
+      - 博客
+  /api/blogs/search:
+    get:
+      description: 支持关键字和标签数组的分页搜索
+      parameters:
+      - description: 关键字
+        in: query
+        name: keyword
+        type: string
+      - description: 标签（可重复）
+        in: query
+        name: tag
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.BlogListResponse'
+        "500":
+          description: 搜索失败
+          schema:
+            type: string
+      summary: 博客模糊搜索与标签筛选
+      tags:
+      - 博客
+  /api/tags:
+    get:
+      description: 获取所有博客标签
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+        "500":
+          description: 获取标签失败
+          schema:
+            type: string
+      summary: 获取所有标签
+      tags:
+      - 博客
+schemes:
+- http
+swagger: "2.0"
