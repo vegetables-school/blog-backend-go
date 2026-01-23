@@ -57,6 +57,7 @@ func (s *AuthService) Register(username, password, email string) (*models.User, 
 		Username:  username,
 		Password:  string(hashedPassword),
 		Email:     email,
+		Role:      "user", // 默认注册为普通用户
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -88,7 +89,7 @@ func (s *AuthService) Login(username, password string) (*models.AuthResponse, er
 	}
 
 	// 生成 JWT token
-	token, err := s.generateToken(user.ID.Hex(), user.Username)
+	token, err := s.generateToken(user.ID.Hex(), user.Username, user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +139,14 @@ func (s *AuthService) GetUserByID(id string) (*models.User, error) {
 }
 
 // generateToken 生成 JWT token
-func (s *AuthService) generateToken(userID, username string) (string, error) {
+func (s *AuthService) generateToken(userID, username, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":  userID,
 		"username": username,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(), // 24小时过期
+		"role":     role,
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 		"iat":      time.Now().Unix(),
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
 }

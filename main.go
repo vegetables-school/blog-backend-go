@@ -34,6 +34,8 @@ func main() {
 
 	// 初始化服务
 	blogService := services.NewBlogService(mongoCfg.Client, mongoCfg.Database, getEnv("COLLECTION_NAME", "blogs-dev"))
+	commentService := services.NewCommentService(mongoCfg.Client, mongoCfg.Database, "comments")
+	likeService := services.NewLikeService(mongoCfg.Client, mongoCfg.Database, "likes")
 
 	// 初始化认证服务
 	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret") // 在生产环境中请通过环境变量注入
@@ -42,6 +44,8 @@ func main() {
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
 	authHandler := handlers.NewAuthHandler(authService)
+	commentHandler := handlers.NewCommentHandler(commentService)
+	likeHandler := handlers.NewLikeHandler(likeService)
 
 	// 初始化中间件
 	jwtMiddleware := middleware.NewJWTMiddleware(authService)
@@ -50,7 +54,7 @@ func main() {
 	r := mux.NewRouter()
 
 	// 注册路由（集中管理）
-	routes.RegisterRoutes(r, blogHandler, authHandler, jwtMiddleware)
+	routes.RegisterRoutes(r, blogHandler, authHandler, jwtMiddleware, commentHandler, likeHandler)
 
 	// 健康检查端点
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

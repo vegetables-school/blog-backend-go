@@ -1,3 +1,31 @@
+// GetBlogsByTagsWithPagination 分页获取包含所有指定标签的博客文章
+func (s *BlogService) GetBlogsByTagsWithPagination(tags []string, page, limit int64) ([]*models.Blog, int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	filter := bson.M{}
+	if len(tags) > 0 {
+		filter["tags"] = bson.M{"$all": tags}
+	}
+	skip := (page - 1) * limit
+	total, err := s.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	cursor, err := s.collection.Find(ctx, filter, &options.FindOptions{
+		Skip:  &skip,
+		Limit: &limit,
+		Sort:  bson.M{"created_at": -1},
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+	var blogs []*models.Blog
+	if err = cursor.All(ctx, &blogs); err != nil {
+		return nil, 0, err
+	}
+	return blogs, total, nil
+}
 package services
 
 import (
@@ -182,5 +210,75 @@ func (s *BlogService) DeleteBlog(id string) error {
 	}
 
 	_, err = s.collection.DeleteOne(ctx, bson.M{"_id": objID})
+	return err
+}
+
+// SearchBlogs 支持按关键字和标签筛选博客
+func (s *BlogService) SearchBlogs(keyword string, tags []string, page, limit int64) ([]*models.Blog, int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{}
+	if keyword != "" {
+		filter["$or"] = []bson.M{
+			{"title": bson.M{"$regex": keyword, "$options": "i"}},
+			{"content": bson.M{"$regex": keyword, "$options": "i"}},
+		}
+	}
+	if len(tags) > 0 {
+		filter["tags"] = bson.M{"$all": tags}
+	}
+
+	skip := (page - 1) * limit
+	total, err := s.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	cursor, err := s.collection.Find(ctx, filter, &options.FindOptions{
+		Skip:  &skip,
+		Limit: &limit,
+		Sort:  bson.M{"created_at": -1},
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+	var blogs []*models.Blog
+	if err = cursor.All(ctx, &blogs); err != nil {
+		return nil, 0, err
+	}
+	return blogs, total, nil
+}
+
+// GetAllTags 获取所有标签（去重）
+func (s *BlogService) GetAllTags() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tags, err := s.collection.Distinct(ctx, "tags", bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var result []string
+	for _, t := range tags {
+		if str, ok := t.(string); ok {
+			result = append(result, str)
+		}
+	}
+	return result, nil
+}
+
+// AddTag 给所有包含某标签的博客添加新标签（或单独管理标签集合时用）
+func (s *BlogService) AddTag(tag string) error {
+	// 这里假设有一个专门的标签集合（tag_collection），如无则可省略
+	// 可选实现：遍历所有博客，批量添加该标签
+	// 推荐做法：前端直接在创建/编辑博客时维护标签
+	return nil // 如需实现专门标签集合可补充
+}
+
+// DeleteTag 删除所有博客中的某个标签
+func (s *BlogService) DeleteTag(tag string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := s.collection.UpdateMany(ctx, bson.M{"tags": tag}, bson.M{"$pull": bson.M{"tags": tag}})
 	return err
 }

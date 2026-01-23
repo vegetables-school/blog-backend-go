@@ -53,18 +53,25 @@ func (m *JWTMiddleware) Authenticate(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// 从 token 中提取用户信息
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			userID := claims["user_id"].(string)
-			username := claims["username"].(string)
-
-			// 将用户信息添加到请求上下文
-			ctx := context.WithValue(r.Context(), "user_id", userID)
-			ctx = context.WithValue(ctx, "username", username)
-			r = r.WithContext(ctx)
-		} else {
-			http.Error(w, "无效的认证令牌", http.StatusUnauthorized)
-			return
-		}
+		   if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			   userID := claims["user_id"].(string)
+			   username := claims["username"].(string)
+			   role, _ := claims["role"].(string)
+			   ctx := context.WithValue(r.Context(), "user_id", userID)
+			   ctx = context.WithValue(ctx, "username", username)
+			   ctx = context.WithValue(ctx, "role", role)
+			   r = r.WithContext(ctx)
+		   } else {
+			   http.Error(w, "无效的认证令牌", http.StatusUnauthorized)
+			   return
+		   }
+// GetUserRole 从请求上下文中获取用户角色
+func GetUserRole(r *http.Request) string {
+   if role, ok := r.Context().Value("role").(string); ok {
+	   return role
+   }
+   return ""
+}
 
 		next(w, r)
 	}

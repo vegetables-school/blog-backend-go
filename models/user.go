@@ -12,6 +12,7 @@ type User struct {
 	Username  string             `bson:"username" json:"username"`
 	Password  string             `bson:"password" json:"-"` // 密码哈希，不在 JSON 中返回
 	Email     string             `bson:"email" json:"email"`
+	Role      string             `bson:"role" json:"role"` // 用户角色：admin/user
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }

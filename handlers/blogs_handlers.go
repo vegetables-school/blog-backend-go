@@ -1,3 +1,32 @@
+// GetBlogsByTagsHandler 分页获取包含所有指定标签的文章
+func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Request) {
+	tags := r.URL.Query()["tag"] // 支持多个 tag=xxx
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+	page := int64(1)
+	limit := int64(10)
+	if pageStr != "" {
+		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+	if limitStr != "" {
+		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+	blogs, total, err := h.blogService.GetBlogsByTagsWithPagination(tags, page, limit)
+	if err != nil {
+		http.Error(w, "获取文章失败", http.StatusInternalServerError)
+		return
+	}
+	resp := BlogListResponse{
+		Data:       blogs,
+		Pagination: Pagination{Page: page, Limit: limit, Total: total},
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
 package handlers
 
 import (
@@ -11,9 +40,88 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// 标签相关请求体
+type TagRequest struct {
+    Tag string `json:"tag"`
+}
+
 // BlogHandler 处理博客文章的HTTP请求
 type BlogHandler struct {
 	blogService *services.BlogService
+}
+
+// SearchBlogsHandler 支持模糊搜索和标签筛选
+func (h *BlogHandler) SearchBlogsHandler(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("keyword")
+	tagsParam := r.URL.Query()["tag"] // 支持多个 tag=xxx
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+	page := int64(1)
+	limit := int64(10)
+	if pageStr != "" {
+		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
+			page = p
+		}
+	}
+	if limitStr != "" {
+		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+	blogs, total, err := h.blogService.SearchBlogs(keyword, tagsParam, page, limit)
+	if err != nil {
+		http.Error(w, "搜索失败", http.StatusInternalServerError)
+		return
+	}
+	resp := BlogListResponse{
+		Data:       blogs,
+		Pagination: Pagination{Page: page, Limit: limit, Total: total},
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// GetAllTagsHandler 获取所有标签
+func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
+	tags, err := h.blogService.GetAllTags()
+	if err != nil {
+		http.Error(w, "获取标签失败", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct {
+		Data []string `json:"data"`
+	}{Data: tags})
+}
+
+// AddTagHandler 新增标签（如有专门标签集合时用）
+func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
+	var req TagRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
+		http.Error(w, "无效的标签", http.StatusBadRequest)
+		return
+	}
+	err := h.blogService.AddTag(req.Tag)
+	if err != nil {
+		http.Error(w, "添加标签失败", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+// DeleteTagHandler 删除标签（会从所有博客中移除该标签）
+func (h *BlogHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
+	var req TagRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
+		http.Error(w, "无效的标签", http.StatusBadRequest)
+		return
+	}
+	err := h.blogService.DeleteTag(req.Tag)
+	if err != nil {
+		http.Error(w, "删除标签失败", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // NewBlogHandler 创建新的BlogHandler实例
