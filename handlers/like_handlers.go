@@ -88,5 +88,10 @@ func (h *LikeHandler) GetLikeUserID(r *http.Request) (primitive.ObjectID, error)
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
-	return userID, nil
+	// 查询点赞记录，确保该用户对该博客有点赞
+	like, err := h.likeService.GetLikeByBlogAndUser(blogID, userID)
+	if err != nil {
+		return primitive.NilObjectID, err // 没有点赞记录
+	}
+	return like.UserID, nil
 }
