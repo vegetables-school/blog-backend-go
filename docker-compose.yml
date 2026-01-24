@@ -11,6 +11,8 @@ services:
       - "8080:8080" # 映射宿主机 8080 端口到容器
     volumes:
       - blog-backend-go-dev:/blog-backend-go-dev # 挂载开发目录
+      - ./blog-backend-go-dev/.env:/app/.env # 单独挂载 .env 到容器工作目录
+    working_dir: /app
     networks:
       - bridge # 加入默认 bridge 网络，与 mongodb 容器互通(两者网络要一致)
 

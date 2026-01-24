@@ -18,3 +18,21 @@ type Blog struct {
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`         // 博客文章的创建时间
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`         // 博客文章的更新时间
 }
+
+// CreateBlogRequest 创建博客请求
+type CreateBlogRequest struct {
+	Title   string   `json:"title"`
+	Content string   `json:"content"`
+	Tags    []string `json:"tags,omitempty"`
+	Show    *bool    `json:"show,omitempty"`
+}
+
+// UpdateBlogRequest 更新博客请求
+type UpdateBlogRequest struct {
+	Title   *string  `json:"title,omitempty"`
+	Content *string  `json:"content,omitempty"`
+	Author  *string  `json:"author,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
+	Show    *bool    `json:"show,omitempty"`
+	Views   *int64   `json:"views,omitempty"`
+}

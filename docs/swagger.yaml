@@ -1,5 +1,10 @@
 basePath: /
 definitions:
+  handlers.AuthUserResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.User'
+    type: object
   handlers.BlogListResponse:
     properties:
       data:
@@ -9,6 +14,21 @@ definitions:
       pagination:
         $ref: '#/definitions/handlers.Pagination'
     type: object
+  handlers.BlogResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.Blog'
+    type: object
+  handlers.LoginResponse:
+    properties:
+      data:
+        properties:
+          token:
+            type: string
+          user:
+            $ref: '#/definitions/models.User'
+        type: object
+    type: object
   handlers.Pagination:
     properties:
       limit:
@@ -17,6 +37,16 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  handlers.TagRequest:
+    properties:
+      tag:
+        type: string
+    type: object
+  models.AddLikeRequest:
+    properties:
+      blog_id:
+        type: string
     type: object
   models.Blog:
     properties:
@@ -49,6 +79,97 @@ definitions:
       views:
         description: 浏览次数
         type: integer
+    type: object
+  models.Comment:
+    properties:
+      blog_id:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  models.CreateBlogRequest:
+    properties:
+      content:
+        type: string
+      show:
+        type: boolean
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  models.CreateCommentRequest:
+    properties:
+      blog_id:
+        type: string
+      content:
+        type: string
+    type: object
+  models.DeleteCommentRequest:
+    properties:
+      id:
+        type: string
+    type: object
+  models.Like:
+    properties:
+      blog_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.RemoveLikeRequest:
+    properties:
+      blog_id:
+        type: string
+    type: object
+  models.UpdateBlogRequest:
+    properties:
+      author:
+        type: string
+      content:
+        type: string
+      show:
+        type: boolean
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      views:
+        type: integer
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      role:
+        description: 用户角色：admin/user
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
     type: object
   models.UserLoginRequest:
     properties:
@@ -93,8 +214,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/handlers.LoginResponse'
         "400":
           description: 无效的请求数据
           schema:
@@ -117,11 +237,10 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/handlers.AuthUserResponse'
         "400":
           description: 无效的请求数据
           schema:
@@ -133,6 +252,207 @@ paths:
       summary: 用户注册
       tags:
       - 用户
+  /api/admin/blog:
+    post:
+      consumes:
+      - application/json
+      description: 创建新博客文章
+      parameters:
+      - description: 博客内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateBlogRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.BlogResponse'
+        "400":
+          description: 无效的请求数据
+          schema:
+            type: string
+        "401":
+          description: 未认证用户
+          schema:
+            type: string
+        "500":
+          description: 创建文章失败
+          schema:
+            type: string
+      summary: 创建新博客文章
+      tags:
+      - 博客
+  /api/admin/blog/{id}:
+    delete:
+      description: 删除博客文章
+      parameters:
+      - description: 博客ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: 删除成功
+          schema:
+            type: string
+        "401":
+          description: 未认证用户
+          schema:
+            type: string
+        "404":
+          description: 文章未找到
+          schema:
+            type: string
+      summary: 删除博客文章
+      tags:
+      - 博客
+    put:
+      consumes:
+      - application/json
+      description: 更新博客文章
+      parameters:
+      - description: 博客ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBlogRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.BlogResponse'
+        "400":
+          description: 无效的请求数据
+          schema:
+            type: string
+        "401":
+          description: 未认证用户
+          schema:
+            type: string
+        "404":
+          description: 文章未找到
+          schema:
+            type: string
+      summary: 更新博客文章
+      tags:
+      - 博客
+  /api/admin/tag:
+    delete:
+      consumes:
+      - application/json
+      description: 删除标签（会从所有博客中移除该标签）
+      parameters:
+      - description: 标签内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TagRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+          schema:
+            type: string
+        "400":
+          description: 无效的标签
+          schema:
+            type: string
+        "500":
+          description: 删除标签失败
+          schema:
+            type: string
+      summary: 删除标签
+      tags:
+      - 博客
+    post:
+      consumes:
+      - application/json
+      description: 新增一个标签（如有专门标签集合时用）
+      parameters:
+      - description: 标签内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TagRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            type: string
+        "400":
+          description: 无效的标签
+          schema:
+            type: string
+        "500":
+          description: 添加标签失败
+          schema:
+            type: string
+      summary: 新增标签
+      tags:
+      - 博客
+  /api/blog/{id}:
+    get:
+      description: 根据 ID 获取博客详情
+      parameters:
+      - description: 博客ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.BlogResponse'
+        "404":
+          description: 文章未找到
+          schema:
+            type: string
+      summary: 获取单篇博客文章
+      tags:
+      - 博客
+  /api/blogs:
+    get:
+      description: 分页获取博客文章
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.BlogListResponse'
+        "500":
+          description: 获取文章失败
+          schema:
+            type: string
+      summary: 分页获取博客文章
+      tags:
+      - 博客
   /api/blogs/by-tags:
     get:
       description: 根据标签数组分页获取所有包含这些标签的博客文章
@@ -194,6 +514,108 @@ paths:
       summary: 博客模糊搜索与标签筛选
       tags:
       - 博客
+  /api/comment:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定评论
+      parameters:
+      - description: 评论ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.DeleteCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+          schema:
+            type: string
+        "404":
+          description: 未找到
+          schema:
+            type: string
+      summary: 删除评论
+      tags:
+      - 评论
+    post:
+      consumes:
+      - application/json
+      description: 创建新的评论
+      parameters:
+      - description: 评论内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Comment'
+        "400":
+          description: 参数错误
+          schema:
+            type: string
+      summary: 创建评论
+      tags:
+      - 评论
+  /api/like:
+    delete:
+      consumes:
+      - application/json
+      description: 取消对博客的点赞
+      parameters:
+      - description: 点赞内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.RemoveLikeRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 取消成功
+          schema:
+            type: string
+        "404":
+          description: 未找到
+          schema:
+            type: string
+      summary: 取消点赞
+      tags:
+      - 点赞
+    post:
+      consumes:
+      - application/json
+      description: 给博客点赞
+      parameters:
+      - description: 点赞内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddLikeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Like'
+        "400":
+          description: 参数错误
+          schema:
+            type: string
+      summary: 点赞
+      tags:
+      - 点赞
   /api/tags:
     get:
       description: 获取所有博客标签

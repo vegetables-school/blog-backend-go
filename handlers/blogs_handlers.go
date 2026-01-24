@@ -16,6 +16,11 @@ type BlogHandler struct {
 	blogService *services.BlogService
 }
 
+// NewBlogHandler 创建新的 BlogHandler 实例（确保导出）
+func NewBlogHandler(blogService *services.BlogService) *BlogHandler {
+	return &BlogHandler{blogService: blogService}
+}
+
 // 标签相关请求体
 type TagRequest struct {
 	Tag string `json:"tag"`
@@ -57,17 +62,8 @@ func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Reque
 		Pagination: Pagination{Page: page, Limit: limit, Total: total},
 	}
 	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(resp)
-}
-
-// 标签相关请求体
-type TagRequest struct {
-	Tag string `json:"tag"`
-}
-
-// BlogHandler 处理博客文章的HTTP请求
-type BlogHandler struct {
-	blogService *services.BlogService
 }
 
 // SearchBlogsHandler 支持模糊搜索和标签筛选
@@ -131,6 +127,16 @@ func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 // AddTagHandler 新增标签（如有专门标签集合时用）
+// @Summary 新增标签
+// @Description 新增一个标签（如有专门标签集合时用）
+// @Tags 博客
+// @Accept json
+// @Produce json
+// @Param data body TagRequest true "标签内容"
+// @Success 201 {string} string "创建成功"
+// @Failure 400 {string} string "无效的标签"
+// @Failure 500 {string} string "添加标签失败"
+// @Router /api/admin/tag [post]
 func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 	var req TagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
@@ -146,6 +152,16 @@ func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteTagHandler 删除标签（会从所有博客中移除该标签）
+// @Summary 删除标签
+// @Description 删除标签（会从所有博客中移除该标签）
+// @Tags 博客
+// @Accept json
+// @Produce json
+// @Param data body TagRequest true "标签内容"
+// @Success 204 {string} string "删除成功"
+// @Failure 400 {string} string "无效的标签"
+// @Failure 500 {string} string "删除标签失败"
+// @Router /api/admin/tag [delete]
 func (h *BlogHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	var req TagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
@@ -160,31 +176,15 @@ func (h *BlogHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// NewBlogHandler 创建新的BlogHandler实例
-func NewBlogHandler(blogService *services.BlogService) *BlogHandler {
-	return &BlogHandler{
-		blogService: blogService,
-	}
-}
-
-// GetBlogs 获取所有博客文章
-func (h *BlogHandler) GetBlogs(w http.ResponseWriter, r *http.Request) {
-	blogs, err := h.blogService.GetAllBlogs()
-	if err != nil {
-		http.Error(w, "获取文章失败", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	// 返回强类型响应，主数据放在 data 下
-	resp := BlogListResponse{
-		Data:       blogs,
-		Pagination: Pagination{Page: 1, Limit: int64(len(blogs)), Total: int64(len(blogs))},
-	}
-	json.NewEncoder(w).Encode(resp)
-}
-
 // GetBlogsPaginated 分页获取博客文章
+// @Summary 分页获取博客文章
+// @Description 分页获取博客文章
+// @Tags 博客
+// @Param page query int false "页码"
+// @Param limit query int false "每页数量"
+// @Success 200 {object} BlogListResponse
+// @Failure 500 {string} string "获取文章失败"
+// @Router /api/blogs [get]
 func (h *BlogHandler) GetBlogsPaginated(w http.ResponseWriter, r *http.Request) {
 	// 获取查询参数
 	pageStr := r.URL.Query().Get("page")
@@ -221,6 +221,13 @@ func (h *BlogHandler) GetBlogsPaginated(w http.ResponseWriter, r *http.Request) 
 }
 
 // GetBlog 获取单篇博客文章
+// @Summary 获取单篇博客文章
+// @Description 根据 ID 获取博客详情
+// @Tags 博客
+// @Param id path string true "博客ID"
+// @Success 200 {object} BlogResponse
+// @Failure 404 {string} string "文章未找到"
+// @Router /api/blog/{id} [get]
 func (h *BlogHandler) GetBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -236,6 +243,17 @@ func (h *BlogHandler) GetBlog(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateBlog 创建新博客文章
+// @Summary 创建新博客文章
+// @Description 创建新博客文章
+// @Tags 博客
+// @Accept json
+// @Produce json
+// @Param data body models.CreateBlogRequest true "博客内容"
+// @Success 201 {object} BlogResponse
+// @Failure 400 {string} string "无效的请求数据"
+// @Failure 401 {string} string "未认证用户"
+// @Failure 500 {string} string "创建文章失败"
+// @Router /api/admin/blog [post]
 func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title   string   `json:"title"`
@@ -272,6 +290,18 @@ func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateBlog 更新博客文章
+// @Summary 更新博客文章
+// @Description 更新博客文章
+// @Tags 博客
+// @Accept json
+// @Produce json
+// @Param id path string true "博客ID"
+// @Param data body models.UpdateBlogRequest true "更新内容"
+// @Success 200 {object} BlogResponse
+// @Failure 400 {string} string "无效的请求数据"
+// @Failure 401 {string} string "未认证用户"
+// @Failure 404 {string} string "文章未找到"
+// @Router /api/admin/blog/{id} [put]
 func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -310,6 +340,14 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteBlog 删除博客文章
+// @Summary 删除博客文章
+// @Description 删除博客文章
+// @Tags 博客
+// @Param id path string true "博客ID"
+// @Success 204 {string} string "删除成功"
+// @Failure 401 {string} string "未认证用户"
+// @Failure 404 {string} string "文章未找到"
+// @Router /api/admin/blog/{id} [delete]
 func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

@@ -21,22 +21,17 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 }
 
 // Register 用户注册
-// Register 用户注册
 // @Summary 用户注册
 // @Description 用户注册接口
 // @Tags 用户
 // @Accept json
 // @Produce json
 // @Param data body models.UserRegisterRequest true "注册信息"
-// @Success 200 {object} map[string]interface{}
+// @Success 201 {object} AuthUserResponse
 // @Failure 400 {string} string "无效的请求数据"
 // @Failure 403 {string} string "注册功能暂时关闭"
 // @Router /api/admin/auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	// 暂时禁止注册功能
-	// http.Error(w, "注册功能暂时关闭", http.StatusForbidden)
-	// return
-
 	var req models.UserRegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效的请求数据", http.StatusBadRequest)
@@ -72,7 +67,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param data body models.UserLoginRequest true "登录信息"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} LoginResponse
 // @Failure 400 {string} string "无效的请求数据"
 // @Router /api/admin/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

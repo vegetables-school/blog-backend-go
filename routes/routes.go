@@ -17,6 +17,6 @@ func RegisterRoutes(
 	likeHandler *handlers.LikeHandler,
 ) {
 	RegisterPublicRoutes(r, blogHandler, authHandler, jwtMiddleware, commentHandler, likeHandler)
-	RegisterFrontRoutes(r, authHandler)
+	RegisterFrontRoutes(r, authHandler, jwtMiddleware, commentHandler, likeHandler)
 	RegisterAdminRoutes(r, blogHandler, authHandler, jwtMiddleware)
 }

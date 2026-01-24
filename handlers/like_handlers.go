@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"blog/middleware"
+	"blog/models"
 	"blog/services"
 	"encoding/json"
 	"net/http"
@@ -18,19 +19,17 @@ func NewLikeHandler(likeService *services.LikeService) *LikeHandler {
 }
 
 // AddLikeHandler 新增点赞
+// @Summary 点赞
+// @Description 给博客点赞
+// @Tags 点赞
+// @Accept json
+// @Produce json
+// @Param data body models.AddLikeRequest true "点赞内容"
+// @Success 201 {object} models.Like
+// @Failure 400 {string} string "参数错误"
+// @Router /api/like [post]
 func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
-	// @Summary 点赞
-	// @Description 给博客点赞
-	// @Tags 点赞
-	// @Accept json
-	// @Produce json
-	// @Param data body models.Like true "点赞内容"
-	// @Success 201 {object} models.Like
-	// @Failure 400 {string} string "参数错误"
-	// @Router /api/like [post]
-	var req struct {
-		BlogID string `json:"blog_id"`
-	}
+	var req models.AddLikeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效请求", http.StatusBadRequest)
 		return
@@ -54,19 +53,17 @@ func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // RemoveLikeHandler 取消点赞（只能本人或管理员）
+// @Summary 取消点赞
+// @Description 取消对博客的点赞
+// @Tags 点赞
+// @Accept json
+// @Produce json
+// @Param data body models.RemoveLikeRequest true "点赞内容"
+// @Success 204 {string} string "取消成功"
+// @Failure 404 {string} string "未找到"
+// @Router /api/like [delete]
 func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) {
-	// @Summary 取消点赞
-	// @Description 取消对博客的点赞
-	// @Tags 点赞
-	// @Accept json
-	// @Produce json
-	// @Param data body models.Like true "点赞内容（含ID）"
-	// @Success 204 {string} string "取消成功"
-	// @Failure 404 {string} string "未找到"
-	// @Router /api/like [delete]
-	var req struct {
-		BlogID string `json:"blog_id"`
-	}
+	var req models.RemoveLikeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效请求", http.StatusBadRequest)
 		return
@@ -91,9 +88,7 @@ func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) 
 
 // GetLikeUserID 用于权限中间件，获取点赞的 user_id
 func (h *LikeHandler) GetLikeUserID(r *http.Request) (primitive.ObjectID, error) {
-	var req struct {
-		BlogID string `json:"blog_id"`
-	}
+	var req models.RemoveLikeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return primitive.NilObjectID, err
 	}

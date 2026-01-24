@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"blog/middleware"
+	"blog/models"
 	"blog/services"
 	"encoding/json"
 	"net/http"
@@ -18,20 +19,17 @@ func NewCommentHandler(commentService *services.CommentService) *CommentHandler 
 }
 
 // CreateCommentHandler 新增评论
+// @Summary 创建评论
+// @Description 创建新的评论
+// @Tags 评论
+// @Accept json
+// @Produce json
+// @Param data body models.CreateCommentRequest true "评论内容"
+// @Success 201 {object} models.Comment
+// @Failure 400 {string} string "参数错误"
+// @Router /api/comment [post]
 func (h *CommentHandler) CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
-	// @Summary 创建评论
-	// @Description 创建新的评论
-	// @Tags 评论
-	// @Accept json
-	// @Produce json
-	// @Param data body models.Comment true "评论内容"
-	// @Success 201 {object} models.Comment
-	// @Failure 400 {string} string "参数错误"
-	// @Router /api/comment [post]
-	var req struct {
-		BlogID  string `json:"blog_id"`
-		Content string `json:"content"`
-	}
+	var req models.CreateCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效请求", http.StatusBadRequest)
 		return
@@ -58,17 +56,22 @@ func (h *CommentHandler) CreateCommentHandler(w http.ResponseWriter, r *http.Req
 }
 
 // DeleteCommentHandler 删除评论（只能本人或管理员）
+// @Summary 删除评论
+// @Description 删除指定评论
+// @Tags 评论
+// @Accept json
+// @Produce json
+// @Param data body models.DeleteCommentRequest true "评论ID"
+// @Success 204 {string} string "删除成功"
+// @Failure 404 {string} string "未找到"
+// @Router /api/comment [delete]
 func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
-	// @Summary 删除评论
-	// @Description 删除指定评论
-	// @Tags 评论
-	// @Accept json
-	// @Produce json
-	// @Param data body models.Comment true "评论内容（含ID）"
-	// @Success 204 {string} string "删除成功"
-	// @Failure 404 {string} string "未找到"
-	// @Router /api/comment [delete]
-	commentIDHex := r.URL.Query().Get("id")
+	var req models.DeleteCommentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "无效请求", http.StatusBadRequest)
+		return
+	}
+	commentIDHex := req.ID
 	commentID, err := primitive.ObjectIDFromHex(commentIDHex)
 	if err != nil {
 		http.Error(w, "无效评论ID", http.StatusBadRequest)
@@ -84,7 +87,11 @@ func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Req
 
 // GetCommentUserID 用于权限中间件，获取评论的 user_id
 func (h *CommentHandler) GetCommentUserID(r *http.Request) (primitive.ObjectID, error) {
-	commentIDHex := r.URL.Query().Get("id")
+	var req models.DeleteCommentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return primitive.NilObjectID, err
+	}
+	commentIDHex := req.ID
 	commentID, err := primitive.ObjectIDFromHex(commentIDHex)
 	if err != nil {
 		return primitive.NilObjectID, err

@@ -13,3 +13,13 @@ type Like struct {
 	UserID    primitive.ObjectID `bson:"user_id" json:"user_id"`
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 }
+
+// AddLikeRequest 点赞请求
+type AddLikeRequest struct {
+	BlogID string `json:"blog_id"`
+}
+
+// RemoveLikeRequest 取消点赞请求
+type RemoveLikeRequest struct {
+	BlogID string `json:"blog_id"`
+}

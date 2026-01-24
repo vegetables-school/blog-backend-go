@@ -16,3 +16,14 @@ type Comment struct {
 	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
+
+// CreateCommentRequest 创建评论请求
+type CreateCommentRequest struct {
+	BlogID  string `json:"blog_id"`
+	Content string `json:"content"`
+}
+
+// DeleteCommentRequest 删除评论请求
+type DeleteCommentRequest struct {
+	ID string `json:"id"`
+}
