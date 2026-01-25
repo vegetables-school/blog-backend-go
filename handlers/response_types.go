@@ -34,3 +34,9 @@ type LoginResponse struct {
 		User  *models.User `json:"user"`
 	} `json:"data"`
 }
+
+// LoginData 登录数据类型（用于便捷构造）
+type LoginData struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"blog/config"
 	"blog/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,7 +25,7 @@ func NewCommentService(client *mongo.Client, dbName, collectionName string) *Com
 
 // CreateComment 新增评论
 func (s *CommentService) CreateComment(blogID, userID primitive.ObjectID, username, content string) (*models.Comment, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
 	defer cancel()
 	comment := &models.Comment{
 		ID:        primitive.NewObjectID(),
@@ -44,7 +45,7 @@ func (s *CommentService) CreateComment(blogID, userID primitive.ObjectID, userna
 
 // DeleteComment 删除评论（只能本人或管理员）
 func (s *CommentService) DeleteComment(commentID primitive.ObjectID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
 	defer cancel()
 	_, err := s.collection.DeleteOne(ctx, bson.M{"_id": commentID})
 	return err
@@ -52,7 +53,7 @@ func (s *CommentService) DeleteComment(commentID primitive.ObjectID) error {
 
 // GetCommentByID 获取评论
 func (s *CommentService) GetCommentByID(commentID primitive.ObjectID) (*models.Comment, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.QuickQueryTimeout)
 	defer cancel()
 	var comment models.Comment
 	err := s.collection.FindOne(ctx, bson.M{"_id": commentID}).Decode(&comment)

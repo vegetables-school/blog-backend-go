@@ -4,6 +4,7 @@ import (
 	"blog/middleware"
 	"blog/models"
 	"blog/services"
+	"blog/utils"
 	"encoding/json"
 	"net/http"
 
@@ -31,28 +32,27 @@ func NewCommentHandler(commentService *services.CommentService) *CommentHandler 
 func (h *CommentHandler) CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效请求", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效请求")
 		return
 	}
 	blogID, err := primitive.ObjectIDFromHex(req.BlogID)
 	if err != nil {
-		http.Error(w, "无效博客ID", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效博客ID")
 		return
 	}
 	userIDHex := middleware.GetUserID(r)
 	userID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
-		http.Error(w, "无效用户ID", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "无效用户ID")
 		return
 	}
 	username := middleware.GetUsername(r)
 	comment, err := h.commentService.CreateComment(blogID, userID, username, req.Content)
 	if err != nil {
-		http.Error(w, "评论失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "评论失败")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(comment)
+	utils.SendJSON(w, http.StatusCreated, comment)
 }
 
 // DeleteCommentHandler 删除评论（只能本人或管理员）
@@ -68,18 +68,18 @@ func (h *CommentHandler) CreateCommentHandler(w http.ResponseWriter, r *http.Req
 func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.DeleteCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效请求", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效请求")
 		return
 	}
 	commentIDHex := req.ID
 	commentID, err := primitive.ObjectIDFromHex(commentIDHex)
 	if err != nil {
-		http.Error(w, "无效评论ID", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效评论ID")
 		return
 	}
 	err = h.commentService.DeleteComment(commentID)
 	if err != nil {
-		http.Error(w, "删除失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "删除失败")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

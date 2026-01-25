@@ -14,6 +14,7 @@ import (
 	"blog/middleware"
 	"blog/routes"
 	"blog/services"
+	"blog/utils"
 	"context"
 	"fmt"
 	"log"
@@ -26,6 +27,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	// 匿名 import handlers，确保 dummy handler 被 swag 收录
 	_ "blog/handlers"
@@ -45,6 +48,12 @@ func main() {
 		log.Printf("提示: 未找到或无法加载 .env 文件，将使用环境变量或默认值")
 	}
 
+	// 初始化日志系统
+	env := getEnv("ENV", "development")
+	utils.InitLogger(env)
+	defer utils.Sync()
+	utils.Info("日志系统初始化完成", zap.String("env", env))
+
 	// 脱敏打印 MongoDB 配置信息
 	mongoURI := getEnv("MONGODB_URI", "")
 	if mongoURI != "" {
@@ -57,9 +66,17 @@ func main() {
 	// 初始化 MongoDB（自动配置）
 	mongoCfg, err := config.InitMongo()
 	if err != nil {
-		log.Fatal("MongoDB 初始化失败:", err)
+		utils.Fatal("MongoDB 初始化失败", zap.Error(err))
 	}
-	log.Println("成功连接到 MongoDB")
+	utils.Info("成功连接到 MongoDB")
+
+	// 创建数据库索引
+	if err := config.CreateIndexes(mongoCfg.Client, mongoCfg.Database); err != nil {
+		utils.Warn("创建数据库索引失败", zap.Error(err))
+		// 不影响程序启动，继续运行
+	} else {
+		utils.Info("数据库索引创建成功")
+	}
 
 	// 初始化服务
 	blogService := services.NewBlogService(mongoCfg.Client, mongoCfg.Database, getEnv("COLLECTION_NAME", "blogs-dev"))
@@ -67,13 +84,15 @@ func main() {
 	likeService := services.NewLikeService(mongoCfg.Client, mongoCfg.Database, "likes")
 
 	// 初始化认证服务
-	jwtSecret := getEnv("JWT_SECRET", "default-jwt-secret")
-	authService := services.NewAuthService(mongoCfg.Client, mongoCfg.Database, "users", jwtSecret)
-
-	// 安全检查：警告生产环境使用了不安全的默认 JWT 密钥
-	if jwtSecret == "default-jwt-secret" {
-		log.Printf("警告: 正在使用默认的 JWT 密钥，请在生产环境通过 JWT_SECRET 环境变量设置安全的密钥")
+	jwtSecret := getEnv("JWT_SECRET", "")
+	if jwtSecret == "" {
+		utils.Fatal("JWT_SECRET 环境变量未设置，请设置一个安全的密钥后再启动服务")
 	}
+	if len(jwtSecret) < 32 {
+		utils.Fatal("JWT_SECRET 长度至少需要 32 个字符")
+	}
+	authService := services.NewAuthService(mongoCfg.Client, mongoCfg.Database, "users", jwtSecret)
+	utils.Info("JWT 认证已配置")
 
 	// 初始化处理器
 	blogHandler := handlers.NewBlogHandler(blogService)
@@ -106,13 +125,20 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	}).Methods("GET", "HEAD")
 
+	// 创建限流器（每秒 100 个请求，桶大小 200）
+	rateLimiter := middleware.NewIPRateLimiter(rate.Every(10*time.Millisecond), 200)
+
 	// 启动服务器（带超时配置）
 	port := getEnv("PORT", "8080")
 	addr := fmt.Sprintf(":%s", port)
 
+	// 应用中间件：限流 -> 压缩 -> 路由
+	handler := middleware.RateLimitMiddleware(rateLimiter)(r)
+	handler = middleware.GzipMiddleware(handler)
+
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      r,
+		Handler:      handler,
 		ReadTimeout:  readTimeout,  // 读取请求超时
 		WriteTimeout: writeTimeout, // 写入响应超时
 		IdleTimeout:  idleTimeout,  // 空闲连接超时
@@ -121,7 +147,7 @@ func main() {
 	// 启动服务器（监听信号实现优雅关闭）
 	serverErrors := make(chan error, 1)
 	go func() {
-		log.Printf("博客服务器启动在 http://localhost:%s\n", port)
+		utils.Info("博客服务器启动", zap.String("address", addr))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			serverErrors <- err
 		}
@@ -134,10 +160,10 @@ func main() {
 	// 等待信号或服务器错误
 	select {
 	case <-sigChan:
-		log.Println("收到关闭信号，开始优雅关闭...")
+		utils.Info("收到关闭信号，开始优雅关闭...")
 	case err := <-serverErrors:
 		if err != nil && err != http.ErrServerClosed {
-			log.Printf("服务器启动失败: %v", err)
+			utils.Error("服务器启动失败", zap.Error(err))
 			return
 		}
 	}
@@ -147,18 +173,17 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("服务器关闭失败: %v", err)
+		utils.Error("服务器关闭失败", zap.Error(err))
 	}
 
 	// 显式关闭 MongoDB 连接
 	if err := config.CloseMongo(); err != nil {
-		log.Printf("关闭 MongoDB 连接失败: %v", err)
+		utils.Error("关闭 MongoDB 连接失败", zap.Error(err))
 	} else {
-		log.Println("MongoDB 连接已关闭")
+		utils.Info("MongoDB 连接已关闭")
 	}
 
-	log.Println("服务器已关闭")
-
+	utils.Info("服务器已关闭")
 }
 
 // getEnv 从环境变量读取值，若为空则返回默认值
@@ -168,3 +193,5 @@ func getEnv(key, defaultVal string) string {
 	}
 	return defaultVal
 }
+
+

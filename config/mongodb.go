@@ -38,7 +38,19 @@ func InitMongo() (*MongoConfig, error) {
 		db := getEnv("MONGODB_DATABASE", "blog")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		clientOpts := options.Client().ApplyURI(uri)
+
+		// 优化连接池配置
+		clientOpts := options.Client().
+			ApplyURI(uri).
+			SetMaxPoolSize(100).               // 最大连接数
+			SetMinPoolSize(10).                // 最小连接数
+			SetMaxConnecting(10).              // 最大并发连接数
+			SetConnectTimeout(10*time.Second).  // 连接超时
+			SetSocketTimeout(30*time.Second).   // Socket 超时
+			SetServerSelectionTimeout(10*time.Second).
+			SetRetryWrites(true).              // 启用重试写操作
+			SetRetryReads(true)               // 启用重试读操作
+
 		client, e := mongo.Connect(ctx, clientOpts)
 		if e != nil {
 			err = e

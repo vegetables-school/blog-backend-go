@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"blog/middleware"
 	"blog/services"
+	"blog/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -37,33 +37,20 @@ type TagRequest struct {
 // @Failure 500 {string} string "获取文章失败"
 // @Router /api/blogs/by-tags [get]
 func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Request) {
-	tags := r.URL.Query()["tag"] // 支持多个 tag=xxx
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	page := int64(1)
-	limit := int64(10)
-	if pageStr != "" {
-		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if limitStr != "" {
-		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 && l <= 100 {
-			limit = l
-		}
-	}
+	tags := r.URL.Query()["tag"]
+	page, limit := utils.ParsePagination(r)
+
 	blogs, total, err := h.blogService.GetBlogsByTagsWithPagination(tags, page, limit)
 	if err != nil {
-		http.Error(w, "获取文章失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "获取文章失败")
 		return
 	}
+
 	resp := BlogListResponse{
 		Data:       blogs,
 		Pagination: Pagination{Page: page, Limit: limit, Total: total},
 	}
-	w.Header().Set("Content-Type", "application/json")
-
-	json.NewEncoder(w).Encode(resp)
+	utils.SendJSON(w, http.StatusOK, resp)
 }
 
 // SearchBlogsHandler 支持模糊搜索和标签筛选
@@ -79,32 +66,20 @@ func (h *BlogHandler) GetBlogsByTagsHandler(w http.ResponseWriter, r *http.Reque
 // @Router /api/blogs/search [get]
 func (h *BlogHandler) SearchBlogsHandler(w http.ResponseWriter, r *http.Request) {
 	keyword := r.URL.Query().Get("keyword")
-	tagsParam := r.URL.Query()["tag"] // 支持多个 tag=xxx
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	page := int64(1)
-	limit := int64(10)
-	if pageStr != "" {
-		if p, err := strconv.ParseInt(pageStr, 10, 64); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if limitStr != "" {
-		if l, err := strconv.ParseInt(limitStr, 10, 64); err == nil && l > 0 && l <= 100 {
-			limit = l
-		}
-	}
+	tagsParam := r.URL.Query()["tag"]
+	page, limit := utils.ParsePagination(r)
+
 	blogs, total, err := h.blogService.SearchBlogs(keyword, tagsParam, page, limit)
 	if err != nil {
-		http.Error(w, "搜索失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "搜索失败")
 		return
 	}
+
 	resp := BlogListResponse{
 		Data:       blogs,
 		Pagination: Pagination{Page: page, Limit: limit, Total: total},
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	utils.SendJSON(w, http.StatusOK, resp)
 }
 
 // GetAllTagsHandler 获取所有标签
@@ -117,13 +92,10 @@ func (h *BlogHandler) SearchBlogsHandler(w http.ResponseWriter, r *http.Request)
 func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.blogService.GetAllTags()
 	if err != nil {
-		http.Error(w, "获取标签失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "获取标签失败")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(struct {
-		Data []string `json:"data"`
-	}{Data: tags})
+	utils.SendJSON(w, http.StatusOK, map[string]interface{}{"data": tags})
 }
 
 // AddTagHandler 新增标签（如有专门标签集合时用）
@@ -140,12 +112,12 @@ func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) 
 func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 	var req TagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
-		http.Error(w, "无效的标签", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效的标签")
 		return
 	}
 	err := h.blogService.AddTag(req.Tag)
 	if err != nil {
-		http.Error(w, "添加标签失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "添加标签失败")
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -165,12 +137,12 @@ func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 func (h *BlogHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	var req TagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Tag == "" {
-		http.Error(w, "无效的标签", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效的标签")
 		return
 	}
 	err := h.blogService.DeleteTag(req.Tag)
 	if err != nil {
-		http.Error(w, "删除标签失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "删除标签失败")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -186,28 +158,11 @@ func (h *BlogHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "获取文章失败"
 // @Router /api/blogs [get]
 func (h *BlogHandler) GetBlogsPaginated(w http.ResponseWriter, r *http.Request) {
-	// 获取查询参数
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-
-	// 默认值
-	page := int64(1)
-	limit := int64(10)
-
-	if pageStr != "" {
-		if parsedPage, err := strconv.ParseInt(pageStr, 10, 64); err == nil && parsedPage > 0 {
-			page = parsedPage
-		}
-	}
-	if limitStr != "" {
-		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
-			limit = parsedLimit
-		}
-	}
+	page, limit := utils.ParsePagination(r)
 
 	blogs, total, err := h.blogService.GetBlogsWithPagination(page, limit)
 	if err != nil {
-		http.Error(w, "获取文章失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "获取文章失败")
 		return
 	}
 
@@ -216,8 +171,7 @@ func (h *BlogHandler) GetBlogsPaginated(w http.ResponseWriter, r *http.Request) 
 		Pagination: Pagination{Page: page, Limit: limit, Total: total},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	utils.SendJSON(w, http.StatusOK, response)
 }
 
 // GetBlog 获取单篇博客文章
@@ -234,12 +188,11 @@ func (h *BlogHandler) GetBlog(w http.ResponseWriter, r *http.Request) {
 
 	blog, err := h.blogService.GetBlogByID(id)
 	if err != nil {
-		http.Error(w, "文章未找到", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "文章未找到")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(BlogResponse{Data: blog})
+	utils.SendJSON(w, http.StatusOK, BlogResponse{Data: blog})
 }
 
 // CreateBlog 创建新博客文章
@@ -262,14 +215,14 @@ func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 		Show    *bool    `json:"show,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效的请求数据", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效的请求数据")
 		return
 	}
 
 	// 从认证上下文中获取作者信息
 	author := middleware.GetUsername(r)
 	if author == "" {
-		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "未认证用户")
 		return
 	}
 
@@ -280,13 +233,11 @@ func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 
 	blog, err := h.blogService.CreateBlog(req.Title, req.Content, author, req.Tags, showVal)
 	if err != nil {
-		http.Error(w, "创建文章失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "创建文章失败")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(BlogResponse{Data: blog})
+	utils.SendJSON(w, http.StatusCreated, BlogResponse{Data: blog})
 }
 
 // UpdateBlog 更新博客文章
@@ -315,14 +266,14 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 		Views   *int64   `json:"views,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效的请求数据", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效的请求数据")
 		return
 	}
 
 	// 从认证上下文中获取用户信息（用于权限校验）
 	username := middleware.GetUsername(r)
 	if username == "" {
-		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "未认证用户")
 		return
 	}
 
@@ -331,12 +282,11 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 
 	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, req.Author, req.Tags, req.Show, req.Views)
 	if err != nil {
-		http.Error(w, "文章未找到", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "文章未找到")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(BlogResponse{Data: blog})
+	utils.SendJSON(w, http.StatusOK, BlogResponse{Data: blog})
 }
 
 // DeleteBlog 删除博客文章
@@ -355,7 +305,7 @@ func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	// 从认证上下文中获取用户信息
 	username := middleware.GetUsername(r)
 	if username == "" {
-		http.Error(w, "未认证用户", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "未认证用户")
 		return
 	}
 
@@ -363,7 +313,7 @@ func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	// TODO: 添加权限检查
 
 	if err := h.blogService.DeleteBlog(id); err != nil {
-		http.Error(w, "文章未找到", http.StatusNotFound)
+		utils.SendError(w, http.StatusNotFound, "文章未找到")
 		return
 	}
 

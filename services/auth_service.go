@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"blog/config"
 	"blog/models"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +32,7 @@ func NewAuthService(client *mongo.Client, dbName, collectionName string, jwtSecr
 
 // Register 用户注册
 func (s *AuthService) Register(username, password, email string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.WriteTimeout)
 	defer cancel()
 
 	// 检查用户名是否已存在
@@ -73,7 +74,7 @@ func (s *AuthService) Register(username, password, email string) (*models.User, 
 
 // Login 用户登录
 func (s *AuthService) Login(username, password string) (*models.AuthResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.QuickQueryTimeout)
 	defer cancel()
 
 	var user models.User
@@ -122,7 +123,7 @@ func (s *AuthService) ValidateToken(tokenString string) (*jwt.Token, error) {
 
 // GetUserByID 根据ID获取用户
 func (s *AuthService) GetUserByID(id string) (*models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.QuickQueryTimeout)
 	defer cancel()
 
 	objID, err := primitive.ObjectIDFromHex(id)

@@ -4,6 +4,7 @@ import (
 	"blog/middleware"
 	"blog/models"
 	"blog/services"
+	"blog/utils"
 	"encoding/json"
 	"net/http"
 
@@ -31,22 +32,22 @@ func NewLikeHandler(likeService *services.LikeService) *LikeHandler {
 func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.AddLikeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效请求", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效请求")
 		return
 	}
 	blogID, err := primitive.ObjectIDFromHex(req.BlogID)
 	if err != nil {
-		http.Error(w, "无效博客ID", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效博客ID")
 		return
 	}
 	userIDHex := middleware.GetUserID(r)
 	userID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
-		http.Error(w, "无效用户ID", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "无效用户ID")
 		return
 	}
 	if err := h.likeService.AddLike(blogID, userID); err != nil {
-		http.Error(w, "点赞失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "点赞失败")
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -65,22 +66,22 @@ func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
 func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.RemoveLikeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "无效请求", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效请求")
 		return
 	}
 	blogID, err := primitive.ObjectIDFromHex(req.BlogID)
 	if err != nil {
-		http.Error(w, "无效博客ID", http.StatusBadRequest)
+		utils.SendError(w, http.StatusBadRequest, "无效博客ID")
 		return
 	}
 	userIDHex := middleware.GetUserID(r)
 	userID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
-		http.Error(w, "无效用户ID", http.StatusUnauthorized)
+		utils.SendError(w, http.StatusUnauthorized, "无效用户ID")
 		return
 	}
 	if err := h.likeService.RemoveLike(blogID, userID); err != nil {
-		http.Error(w, "取消点赞失败", http.StatusInternalServerError)
+		utils.SendError(w, http.StatusInternalServerError, "取消点赞失败")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
