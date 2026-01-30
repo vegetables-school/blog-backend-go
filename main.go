@@ -132,6 +132,11 @@ func main() {
 	port := getEnv("PORT", "8080")
 	addr := fmt.Sprintf(":%s", port)
 
+	// 输出 Swagger UI 访问地址
+	swaggerURL := fmt.Sprintf("http://localhost:%s/swagger/", port)
+	log.Printf("Swagger UI 访问地址: %s\n", swaggerURL)
+	utils.Info("Swagger UI 访问地址", zap.String("url", swaggerURL))
+
 	// 应用中间件：限流 -> 压缩 -> 路由
 	handler := middleware.RateLimitMiddleware(rateLimiter)(r)
 	handler = middleware.GzipMiddleware(handler)
@@ -193,5 +198,3 @@ func getEnv(key, defaultVal string) string {
 	}
 	return defaultVal
 }
-
-

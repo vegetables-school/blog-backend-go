@@ -19,6 +19,10 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
 # 拷贝项目所有文件到构建环境
 COPY . .
 
+# 安装 swag 工具并自动生成 swagger 文档
+RUN go install github.com/swaggo/swag/cmd/swag@latest \
+    && /go/bin/swag init
+
 # 编译 Go 程序为静态二进制，输出到/app目录
 RUN mkdir -p /app \
     && CGO_ENABLED=0 GOOS=linux go build -ldflags='-s -w' -o /app/blog-backend-go-dev ./
