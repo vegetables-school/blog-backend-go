@@ -107,7 +107,7 @@ func (h *BlogHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) 
 // @Param data body TagRequest true "标签内容"
 // @Success 201 {string} string "创建成功"
 // @Failure 400 {string} string "无效的标签"
-// @Failure 500 {string} string "添加标签失败"
+// @Failure 501 {string} string "功能未实现"
 // @Router /api/admin/tag [post]
 func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 	var req TagRequest
@@ -115,12 +115,8 @@ func (h *BlogHandler) AddTagHandler(w http.ResponseWriter, r *http.Request) {
 		utils.SendError(w, http.StatusBadRequest, "无效的标签")
 		return
 	}
-	err := h.blogService.AddTag(req.Tag)
-	if err != nil {
-		utils.SendError(w, http.StatusInternalServerError, "添加标签失败")
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
+	// 标签管理已集成在博客创建/编辑中，此端点暂不实现单独的标签集合管理
+	utils.SendError(w, http.StatusNotImplemented, "标签请直接在创建或编辑博客时管理")
 }
 
 // DeleteTagHandler 删除标签（会从所有博客中移除该标签）
@@ -251,6 +247,7 @@ func (h *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} BlogResponse
 // @Failure 400 {string} string "无效的请求数据"
 // @Failure 401 {string} string "未认证用户"
+// @Failure 403 {string} string "无权限操作他人博客"
 // @Failure 404 {string} string "文章未找到"
 // @Router /api/admin/blog/{id} [put]
 func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
@@ -272,13 +269,29 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 
 	// 从认证上下文中获取用户信息（用于权限校验）
 	username := middleware.GetUsername(r)
+	role := middleware.GetUserRole(r)
 	if username == "" {
 		utils.SendError(w, http.StatusUnauthorized, "未认证用户")
 		return
 	}
 
-	// 检查是否是文章作者（这里简化了，实际应该从数据库检查）
-	// TODO: 添加权限检查
+	// 检查权限：只有管理员可以修改作者字段，普通用户只能修改自己的博客
+	if req.Author != nil && role != "admin" {
+		utils.SendError(w, http.StatusForbidden, "无权限修改作者信息")
+		return
+	}
+
+	// 检查是否是文章作者或管理员
+	existingBlog, err := h.blogService.GetBlogByID(id)
+	if err != nil {
+		utils.SendError(w, http.StatusNotFound, "文章未找到")
+		return
+	}
+
+	if existingBlog.Author != username && role != "admin" {
+		utils.SendError(w, http.StatusForbidden, "无权限操作他人博客")
+		return
+	}
 
 	blog, err := h.blogService.UpdateBlog(id, req.Title, req.Content, req.Author, req.Tags, req.Show, req.Views)
 	if err != nil {
@@ -296,6 +309,7 @@ func (h *BlogHandler) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "博客ID"
 // @Success 204 {string} string "删除成功"
 // @Failure 401 {string} string "未认证用户"
+// @Failure 403 {string} string "无权限操作他人博客"
 // @Failure 404 {string} string "文章未找到"
 // @Router /api/admin/blog/{id} [delete]
 func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
@@ -304,13 +318,23 @@ func (h *BlogHandler) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 
 	// 从认证上下文中获取用户信息
 	username := middleware.GetUsername(r)
+	role := middleware.GetUserRole(r)
 	if username == "" {
 		utils.SendError(w, http.StatusUnauthorized, "未认证用户")
 		return
 	}
 
-	// 检查是否是文章作者（这里简化了，实际应该从数据库检查）
-	// TODO: 添加权限检查
+	// 检查是否是文章作者或管理员
+	existingBlog, err := h.blogService.GetBlogByID(id)
+	if err != nil {
+		utils.SendError(w, http.StatusNotFound, "文章未找到")
+		return
+	}
+
+	if existingBlog.Author != username && role != "admin" {
+		utils.SendError(w, http.StatusForbidden, "无权限操作他人博客")
+		return
+	}
 
 	if err := h.blogService.DeleteBlog(id); err != nil {
 		utils.SendError(w, http.StatusNotFound, "文章未找到")

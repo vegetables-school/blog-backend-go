@@ -61,7 +61,9 @@ func (h *LikeHandler) AddLikeHandler(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param data body models.RemoveLikeRequest true "点赞内容"
 // @Success 204 {string} string "取消成功"
-// @Failure 404 {string} string "未找到"
+// @Failure 400 {string} string "无效请求"
+// @Failure 401 {string} string "未认证"
+// @Failure 404 {string} string "点赞记录未找到"
 // @Router /api/like [delete]
 func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.RemoveLikeRequest
@@ -69,18 +71,35 @@ func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) 
 		utils.SendError(w, http.StatusBadRequest, "无效请求")
 		return
 	}
+
+	// 验证博客ID
 	blogID, err := primitive.ObjectIDFromHex(req.BlogID)
 	if err != nil {
 		utils.SendError(w, http.StatusBadRequest, "无效博客ID")
 		return
 	}
-	userIDHex := middleware.GetUserID(r)
-	userID, err := primitive.ObjectIDFromHex(userIDHex)
+
+	// 从JWT token获取当前用户ID（不使用请求体中的user_id）
+	currentUserIDHex := middleware.GetUserID(r)
+	if currentUserIDHex == "" {
+		utils.SendError(w, http.StatusUnauthorized, "未认证")
+		return
+	}
+
+	currentUserID, err := primitive.ObjectIDFromHex(currentUserIDHex)
 	if err != nil {
 		utils.SendError(w, http.StatusUnauthorized, "无效用户ID")
 		return
 	}
-	if err := h.likeService.RemoveLike(blogID, userID); err != nil {
+
+	// 验证点赞记录是否存在
+	_, err = h.likeService.GetLikeByBlogAndUser(blogID, currentUserID)
+	if err != nil {
+		utils.SendError(w, http.StatusNotFound, "点赞记录未找到")
+		return
+	}
+
+	if err := h.likeService.RemoveLike(blogID, currentUserID); err != nil {
 		utils.SendError(w, http.StatusInternalServerError, "取消点赞失败")
 		return
 	}
@@ -88,24 +107,7 @@ func (h *LikeHandler) RemoveLikeHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 // GetLikeUserID 用于权限中间件，获取点赞的 user_id
+// 注意：此方法已废弃，权限验证已集成到 RemoveLikeHandler 中
 func (h *LikeHandler) GetLikeUserID(r *http.Request) (primitive.ObjectID, error) {
-	var req models.RemoveLikeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return primitive.NilObjectID, err
-	}
-	blogID, err := primitive.ObjectIDFromHex(req.BlogID)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-	userIDHex := middleware.GetUserID(r)
-	userID, err := primitive.ObjectIDFromHex(userIDHex)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-	// 查询点赞记录，确保该用户对该博客有点赞
-	like, err := h.likeService.GetLikeByBlogAndUser(blogID, userID)
-	if err != nil {
-		return primitive.NilObjectID, err // 没有点赞记录
-	}
-	return like.UserID, nil
+	return primitive.NilObjectID, nil
 }

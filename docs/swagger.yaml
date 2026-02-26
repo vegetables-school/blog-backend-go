@@ -304,6 +304,10 @@ paths:
           description: 未认证用户
           schema:
             type: string
+        "403":
+          description: 无权限操作他人博客
+          schema:
+            type: string
         "404":
           description: 文章未找到
           schema:
@@ -340,6 +344,10 @@ paths:
             type: string
         "401":
           description: 未认证用户
+          schema:
+            type: string
+        "403":
+          description: 无权限操作他人博客
           schema:
             type: string
         "404":
@@ -401,8 +409,8 @@ paths:
           description: 无效的标签
           schema:
             type: string
-        "500":
-          description: 添加标签失败
+        "501":
+          description: 功能未实现
           schema:
             type: string
       summary: 新增标签
@@ -533,6 +541,18 @@ paths:
           description: 删除成功
           schema:
             type: string
+        "400":
+          description: 无效请求
+          schema:
+            type: string
+        "401":
+          description: 未认证
+          schema:
+            type: string
+        "403":
+          description: 无权限
+          schema:
+            type: string
         "404":
           description: 未找到
           schema:
@@ -584,8 +604,16 @@ paths:
           description: 取消成功
           schema:
             type: string
+        "400":
+          description: 无效请求
+          schema:
+            type: string
+        "401":
+          description: 未认证
+          schema:
+            type: string
         "404":
-          description: 未找到
+          description: 点赞记录未找到
           schema:
             type: string
       summary: 取消点赞

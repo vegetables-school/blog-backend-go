@@ -27,8 +27,14 @@ func (s *BlogService) GetBlogsByTagsWithPagination(tags []string, page, limit in
 
 	skip := utils.CalculateSkip(page, limit)
 
-	// 使用近似计数，性能更好
-	total, err := s.collection.EstimatedDocumentCount(ctx)
+	// 当有筛选条件时，使用精确计数
+	var total int64
+	var err error
+	if len(tags) > 0 {
+		total, err = s.collection.CountDocuments(ctx, filter)
+	} else {
+		total, err = s.collection.EstimatedDocumentCount(ctx)
+	}
 	if err != nil {
 		utils.Error("获取博客总数失败", zap.Error(err))
 		return nil, 0, err
@@ -96,7 +102,7 @@ func (s *BlogService) GetBlogsWithPagination(page, limit int64) ([]*models.Blog,
 		return nil, 0, err
 	}
 
-	cursor, err := s.collection.Find(ctx, bson.M{}, &options.FindOptions{
+	cursor, err := s.collection.Find(ctx, bson.M{"show": true}, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &limit,
 		Sort:  bson.M{"created_at": -1},
@@ -279,11 +285,10 @@ func (s *BlogService) GetAllTags() ([]string, error) {
 }
 
 // AddTag 给所有包含某标签的博客添加新标签（或单独管理标签集合时用）
+// 注意：此方法已弃用，标签请直接在创建或编辑博客时管理
 func (s *BlogService) AddTag(tag string) error {
-	// 这里假设有一个专门的标签集合（tag_collection），如无则可省略
-	// 可选实现：遍历所有博客，批量添加该标签
-	// 推荐做法：前端直接在创建/编辑博客时维护标签
-	return nil // 如需实现专门标签集合可补充
+	// 标签管理已集成在博客创建/编辑中，不需要单独的标签集合
+	return nil
 }
 
 // DeleteTag 删除所有博客中的某个标签

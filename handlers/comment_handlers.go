@@ -63,6 +63,9 @@ func (h *CommentHandler) CreateCommentHandler(w http.ResponseWriter, r *http.Req
 // @Produce json
 // @Param data body models.DeleteCommentRequest true "评论ID"
 // @Success 204 {string} string "删除成功"
+// @Failure 400 {string} string "无效请求"
+// @Failure 401 {string} string "未认证"
+// @Failure 403 {string} string "无权限"
 // @Failure 404 {string} string "未找到"
 // @Router /api/comment [delete]
 func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +80,29 @@ func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Req
 		utils.SendError(w, http.StatusBadRequest, "无效评论ID")
 		return
 	}
+
+	// 获取当前用户ID和角色
+	currentUserID := middleware.GetUserID(r)
+	currentUserRole := middleware.GetUserRole(r)
+	if currentUserID == "" {
+		utils.SendError(w, http.StatusUnauthorized, "未认证")
+		return
+	}
+
+	// 获取评论信息
+	comment, err := h.commentService.GetCommentByID(commentID)
+	if err != nil {
+		utils.SendError(w, http.StatusNotFound, "评论未找到")
+		return
+	}
+
+	// 检查权限：只有评论作者或管理员可以删除
+	commentUserID := comment.UserID.Hex()
+	if commentUserID != currentUserID && currentUserRole != "admin" {
+		utils.SendError(w, http.StatusForbidden, "无权限删除他人评论")
+		return
+	}
+
 	err = h.commentService.DeleteComment(commentID)
 	if err != nil {
 		utils.SendError(w, http.StatusInternalServerError, "删除失败")
@@ -86,19 +112,7 @@ func (h *CommentHandler) DeleteCommentHandler(w http.ResponseWriter, r *http.Req
 }
 
 // GetCommentUserID 用于权限中间件，获取评论的 user_id
+// 注意：此方法已废弃，权限验证已集成到 DeleteCommentHandler 中
 func (h *CommentHandler) GetCommentUserID(r *http.Request) (primitive.ObjectID, error) {
-	var req models.DeleteCommentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return primitive.NilObjectID, err
-	}
-	commentIDHex := req.ID
-	commentID, err := primitive.ObjectIDFromHex(commentIDHex)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-	comment, err := h.commentService.GetCommentByID(commentID)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-	return comment.UserID, nil
+	return primitive.NilObjectID, nil
 }

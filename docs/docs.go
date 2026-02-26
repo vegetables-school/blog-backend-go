@@ -206,6 +206,12 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "403": {
+                        "description": "无权限操作他人博客",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "404": {
                         "description": "文章未找到",
                         "schema": {
@@ -238,6 +244,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "未认证用户",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限操作他人博客",
                         "schema": {
                             "type": "string"
                         }
@@ -288,8 +300,8 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
-                    "500": {
-                        "description": "添加标签失败",
+                    "501": {
+                        "description": "功能未实现",
                         "schema": {
                             "type": "string"
                         }
@@ -572,6 +584,24 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "400": {
+                        "description": "无效请求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "未认证",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "404": {
                         "description": "未找到",
                         "schema": {
@@ -650,8 +680,20 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "400": {
+                        "description": "无效请求",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "未认证",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "404": {
-                        "description": "未找到",
+                        "description": "点赞记录未找到",
                         "schema": {
                             "type": "string"
                         }
